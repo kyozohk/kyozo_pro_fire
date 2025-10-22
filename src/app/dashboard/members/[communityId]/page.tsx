@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import styles from '../../Dashboard.module.scss';
-import { Search, UserPlus, Mail, MoreHorizontal, UserX, Loader2, ServerCrash } from 'lucide-react';
+import { UserPlus, Loader2, ServerCrash } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit, DocumentData } from 'firebase/firestore';
+import { CommunityMembersList } from '@/components/dashboard';
 
 interface Member extends DocumentData {
   id: string;
@@ -202,16 +203,7 @@ const MembersPage: React.FC = () => {
     });
   }, [sortedMembers, searchQuery]);
 
-  // Helper function to get the display name
-  const getDisplayName = (member: Member) => {
-    return member.fullName || member.name || 'Unknown User';
-  };
-
-  // Helper function to get the email or phone
-  const getContactInfo = (member: Member) => {
-    if (member.email) return member.email;
-    return member.phoneNumber || member.participation?.phoneNumber || member.waNumber || member.phone || 'No contact info';
-  };
+  // We don't need these helper functions anymore as they're handled by the CommunityMembersList component
 
   const isLoading = loadingCommunity || loadingUsers || loadingUsersMembership;
   const error = communityError || usersError || usersMembershipError;
@@ -233,117 +225,28 @@ const MembersPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-card-bg rounded-lg overflow-hidden">
-        {/* Search and filters */}
-        <div className="p-4 border-b border-border flex flex-wrap gap-4 items-center justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary" />
-            <input
-              type="text"
-              placeholder="Search members..."
-              className="w-full bg-background rounded-md py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-accent-pink"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-text-secondary">Sort by:</label>
-            <select 
-              className="bg-background border border-border rounded-md py-1 px-2 text-sm"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="fullName">Name</option>
-              <option value="role">Role</option>
-              <option value="joinDate">Join Date</option>
-              <option value="lastActive">Last Active</option>
-            </select>
-          </div>
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center p-8 bg-card-bg rounded-lg">
+          <Loader2 className="h-12 w-12 animate-spin text-accent-pink mb-4" />
+          <p className="text-text-secondary">Loading members...</p>
         </div>
-        
-        {/* Members list */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-background text-left">
-                <th className="px-4 py-3 font-medium">Member</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Contact</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8">
-                    <div className="flex flex-col items-center justify-center gap-4">
-                      <Loader2 className="h-8 w-8 animate-spin text-accent-pink" />
-                      <p className="text-text-secondary">Loading members...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8">
-                    <div className="flex flex-col items-center justify-center gap-4 text-destructive">
-                      <ServerCrash className="h-8 w-8" />
-                      <p className="font-medium">An Error Occurred</p>
-                      <p className="text-sm font-mono bg-destructive/10 p-2 rounded-md">{error.message}</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredMembers.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-text-secondary">
-                    {searchQuery ? 'No members found matching your search' : 'No members found in this community'}
-                  </td>
-                </tr>
-              ) : (
-                filteredMembers.map(member => (
-                  <tr key={member.id} className="border-t border-border hover:bg-background/50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
-                          {member.profileImage ? (
-                            <img src={member.profileImage} alt={getDisplayName(member)} className="w-full h-full rounded-full object-cover" />
-                          ) : (
-                            <span className="text-white">{getDisplayName(member).charAt(0).toUpperCase()}</span>
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium">{getDisplayName(member)}</p>
-                          <p className="text-xs text-text-secondary">{member.id}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 text-xs rounded-full bg-accent-pink/10 text-accent-pink">
-                        {member.role || 'Member'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {getContactInfo(member)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button className="p-1 rounded-md hover:bg-background">
-                          <Mail size={16} className="text-text-secondary" />
-                        </button>
-                        <button className="p-1 rounded-md hover:bg-background">
-                          <UserX size={16} className="text-text-secondary" />
-                        </button>
-                        <button className="p-1 rounded-md hover:bg-background">
-                          <MoreHorizontal size={16} className="text-text-secondary" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center p-8 bg-card-bg rounded-lg">
+          <ServerCrash className="h-12 w-12 text-destructive mb-4" />
+          <p className="font-medium text-destructive">An Error Occurred</p>
+          <p className="text-sm font-mono bg-destructive/10 p-2 rounded-md mt-2">{error.message}</p>
         </div>
-      </div>
+      ) : (
+        <CommunityMembersList
+          members={filteredMembers}
+          defaultSortField="name"
+          onEdit={(member) => console.log('Edit member:', member)}
+          onMessage={(member) => console.log('Message member:', member)}
+          onCall={(member) => console.log('Call member:', member)}
+          onEmail={(member) => console.log('Email member:', member)}
+          onDelete={(member) => console.log('Delete member:', member)}
+        />
+      )}
     </div>
   );
 };

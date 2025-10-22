@@ -5,7 +5,6 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, DocumentData } from 'firebase/firestore';
 import { EnhancedSelect } from '@/components/ui';
 import styles from '@/components/ui/EnhancedSelect.module.scss';
-import Loading from './Loading';
 
 // Types
 interface Community extends DocumentData {

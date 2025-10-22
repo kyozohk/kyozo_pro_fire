@@ -8,6 +8,8 @@ export { default as CommunitySelectEx } from './CommunitySelectEx';
 export { default as MembersList } from './MembersList';
 export { default as MembersDisplay } from './MembersDisplay';
 export { default as CommunityHeader } from './CommunityHeader';
+export { default as CommunityMembersList } from './CommunityMembersList';
+export { default as CommunityMembersListDemo } from './CommunityMembersListDemo';
 
 // Suspense-enabled components
 export { default as SuspenseCommunityList } from './SuspenseCommunityList';
