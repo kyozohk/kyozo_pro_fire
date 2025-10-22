@@ -116,32 +116,15 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
  * Throws error if core services are not available or used outside provider.
  */
 export const useFirebase = (): FirebaseServicesAndUser => {
-  console.log('🔍 useFirebase - Getting Firebase context');
   const context = useContext(FirebaseContext);
 
   if (context === undefined) {
-    console.error('❌ useFirebase - No Firebase context found');
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
-  
-  console.log('🔍 useFirebase - Context available:', {
-    servicesAvailable: context.areServicesAvailable,
-    hasApp: !!context.firebaseApp,
-    hasFirestore: !!context.firestore,
-    hasAuth: !!context.auth
-  });
 
   if (!context.areServicesAvailable || !context.firebaseApp || !context.firestore || !context.auth) {
-    console.error('❌ useFirebase - Services not available', {
-      servicesAvailable: context.areServicesAvailable,
-      hasApp: !!context.firebaseApp,
-      hasFirestore: !!context.firestore,
-      hasAuth: !!context.auth
-    });
     throw new Error('Firebase core services not available. Check FirebaseProvider props.');
   }
-  
-  console.log('✅ useFirebase - All services available');
 
   return {
     firebaseApp: context.firebaseApp,
@@ -161,15 +144,8 @@ export const useAuth = (): Auth => {
 
 /** Hook to access Firestore instance. */
 export const useFirestore = (): Firestore => {
-  try {
-    console.log('🔍 useFirestore - Attempting to get Firestore instance');
-    const { firestore } = useFirebase();
-    console.log('✅ useFirestore - Got Firestore instance:', firestore ? 'Valid instance' : 'No instance');
-    return firestore;
-  } catch (error) {
-    console.error('❌ useFirestore - Error getting Firestore instance:', error);
-    throw error;
-  }
+  const { firestore } = useFirebase();
+  return firestore;
 };
 
 /** Hook to access Firebase App instance. */
