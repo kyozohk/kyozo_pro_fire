@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, getDoc, query, where, DocumentData } from 'firebase/firestore';
 import CommunityBanner from '@/components/dashboard/CommunityBanner';
-import styles from './CommunityLayout.module.scss';
+import styles from './MembersLayout.module.scss';
 
 interface Community extends DocumentData {
   id: string;
@@ -20,7 +20,7 @@ interface Community extends DocumentData {
   memberCount?: number;
 }
 
-export default function CommunityLayout({
+export default function MembersLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -32,12 +32,6 @@ export default function CommunityLayout({
   const [community, setCommunity] = useState<Community | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Query for community data
-  const communityQuery = useMemoFirebase(() => {
-    if (!firestore || !communityId) return null;
-    return doc(firestore, 'communities', communityId);
-  }, [firestore, communityId]);
   
   // Query for members count
   const membersQuery = useMemoFirebase(() => {
@@ -59,7 +53,7 @@ export default function CommunityLayout({
         setLoading(true);
         setError(null);
         
-        // Use direct document reference instead of the memo
+        // Use direct document reference
         const communityDocRef = doc(firestore, 'communities', communityId);
         const communityDoc = await getDoc(communityDocRef);
         
@@ -121,7 +115,7 @@ export default function CommunityLayout({
   }
   
   return (
-    <div className={styles.communityLayout}>
+    <div className={styles.membersLayout}>
       <CommunityBanner
         communityId={communityId}
         communityName={community.name}
@@ -137,7 +131,7 @@ export default function CommunityLayout({
         onInvite={handleInvite}
         onBroadcast={handleBroadcast}
       />
-      <div className={styles.communityContent}>
+      <div className={styles.membersContent}>
         {children}
       </div>
     </div>

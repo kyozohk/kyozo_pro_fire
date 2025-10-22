@@ -3,7 +3,15 @@
 import React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { UserPlus, Edit, MessageSquare } from 'lucide-react';
+import { 
+  UserPlus, 
+  Edit, 
+  MessageSquare, 
+  Globe, 
+  Lock, 
+  Users 
+} from 'lucide-react';
+import ButtonV2 from '@/components/ui/ButtonV2';
 import styles from './CommunityBanner.module.scss';
 
 interface CommunityBannerProps {
@@ -44,127 +52,117 @@ const CommunityBanner: React.FC<CommunityBannerProps> = ({
     <div className={styles.banner}>
       {/* Banner Image */}
       {bannerURL ? (
-        <Image 
+        <img 
           src={bannerURL} 
           alt={`${communityName} banner`}
           className={styles.bannerImage}
-          fill
-          priority
-          sizes="100vw"
-          style={{ objectFit: 'cover' }}
         />
       ) : (
-        <Image 
-          src={defaultBannerURL} 
+        <img 
+          src="/community-banner.png" 
           alt="Default community banner"
           className={styles.bannerImage}
-          fill
-          priority
-          sizes="100vw"
-          style={{ objectFit: 'cover' }}
         />
       )}
       
-      {/* Gradient Overlay */}
-      <div className={styles.bannerOverlay}></div>
-      
-      {/* Content Container */}
-      <div className={styles.contentContainer}>
-        {/* Top Section: Community Name and Description */}
-        <div className={styles.topSection}>
-          <h1 className={styles.communityName}>{communityName}</h1>
-          <p className={styles.communityDescription}>
-            {communityDescription || 'No description provided'}
-          </p>
-        </div>
-        
-        {/* Middle Section: Badges */}
-        <div className={styles.badgesSection}>
-          {/* Privacy Badge */}
-          <div className={styles.badge}>
-            {isPublic ? '🌐 Public Community' : '🔒 Private Community'}
-          </div>
-          
-          {/* Members Badge */}
-          <div className={styles.badge}>
-            👥 {memberCount} members
-          </div>
-          
-          {/* Location Badge (if provided) */}
-          {location && (
-            <div className={styles.badge}>
-              📍 {location}
+      <div className={styles.communityHeader}>
+        <div className={styles.communityInfo}>
+          {logoURL ? (
+            <img 
+              src={logoURL} 
+              alt={`${communityName} logo`}
+              className={styles.communityLogo}
+            />
+          ) : (
+            <div className={styles.communityLogoPlaceholder}>
+              {communityName.charAt(0).toUpperCase()}
             </div>
           )}
           
-          {/* Category Badge (if provided) */}
-          {category && (
-            <div className={styles.categoryBadge}>
-              {category}
-            </div>
-          )}
-        </div>
-        
-        {/* Bottom Section: Community Logo and Action Buttons */}
-        <div className={styles.bottomSection}>
-          {/* Community Logo */}
-          <div className={styles.logoContainer}>
-            {logoURL ? (
-              <Image 
-                src={logoURL} 
-                alt={`${communityName} logo`}
-                width={80}
-                height={80}
-                className={styles.communityLogo}
-              />
-            ) : (
-              <div className={styles.communityLogoPlaceholder}>
-                {communityName.charAt(0).toUpperCase()}
+          <div className={styles.communityDetails}>
+            <h1 className={styles.communityName}>{communityName}</h1>
+            <p className={styles.communityDescription}>
+              {communityDescription || 'No description provided'}
+            </p>
+            
+            <div className={styles.communityMeta}>
+              <div className={styles.privacyBadge}>
+                {isPublic ? (
+                  <>
+                    <Globe size={16} />
+                    Public Community
+                  </>
+                ) : (
+                  <>
+                    <Lock size={16} />
+                    Private Community
+                  </>
+                )}
               </div>
-            )}
-          </div>
-          
-          {/* Action Buttons */}
-          <div className={styles.actionButtons}>
-            {onEditProfile && (
-              <button 
-                onClick={onEditProfile}
-                className={styles.actionButton}
-              >
-                <Edit size={16} />
-                <span>Edit Profile</span>
-              </button>
-            )}
+              
+              <div className={styles.membersBadge}>
+                <Users size={16} />
+                {memberCount} {memberCount === 1 ? 'member' : 'members'}
+              </div>
+              
+              {location && (
+                <div className={styles.location}>
+                  📍 {location}
+                </div>
+              )}
+              
+              {category && (
+                <div className={styles.category}>
+                  {category}
+                </div>
+              )}
+            </div>
             
-            {onAddMembers && (
-              <button 
-                onClick={onAddMembers}
-                className={styles.actionButton}
-              >
-                <UserPlus size={16} />
-                <span>Add Members</span>
-              </button>
-            )}
-            
-            {onInvite && (
-              <button 
-                onClick={onInvite}
-                className={styles.actionButton}
-              >
-                <UserPlus size={16} />
-                <span>Invite</span>
-              </button>
-            )}
-            
-            {onBroadcast && (
-              <button 
-                onClick={onBroadcast}
-                className={styles.actionButton}
-              >
-                <MessageSquare size={16} />
-                <span>Broadcast</span>
-              </button>
-            )}
+            <div className={styles.headerActions}>
+              {onEditProfile && (
+                <ButtonV2 
+                  variant="outline"
+                  size="small"
+                  onClick={onEditProfile}
+                >
+                  <Edit size={16} />
+                  Edit Profile
+                </ButtonV2>
+              )}
+              
+              {onAddMembers && (
+                <ButtonV2 
+                  variant="outline"
+                  size="small"
+                  onClick={onAddMembers}
+                >
+                  <UserPlus size={16} />
+                  Add Members
+                </ButtonV2>
+              )}
+              
+              {onInvite && (
+                <ButtonV2 
+                  variant="outline"
+                  size="small"
+                  onClick={onInvite}
+                >
+                  <UserPlus size={16} />
+                  Invite
+                </ButtonV2>
+              )}
+              
+              {onBroadcast && (
+                <ButtonV2 
+                  variant="outline"
+                  size="small"
+                  onClick={onBroadcast}
+                >
+                  <MessageSquare size={16} />
+                  Broadcast
+                </ButtonV2>
+              )}
+            </div>
           </div>
         </div>
       </div>

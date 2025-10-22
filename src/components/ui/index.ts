@@ -2,6 +2,7 @@
 export { default as EnhancedSelect } from './EnhancedSelect';
 export type { SelectOption } from './EnhancedSelect';
 export { CustomCheckbox } from './CustomCheckbox';
+export { default as ButtonV2 } from './ButtonV2';
 // Export other custom components as they are defined
 
 // UI components
