@@ -63,11 +63,59 @@ const CommunitySelectEx: React.FC<CommunitySelectExProps> = ({
     communityProfileImage: community.communityProfileImage,
   })) || [];
 
+  // Handle community selection with direct navigation
+  const handleChange = (communityId: string) => {
+    console.log('CommunitySelectEx onChange called with:', communityId);
+    
+    // Check if this is the currently selected community
+    if (communityId === value) {
+      console.log('Community already selected, skipping navigation');
+      return;
+    }
+    
+    // Find the selected community
+    const selectedCommunity = communities?.find(community => community.id === communityId);
+    console.log('Selected community:', selectedCommunity);
+    
+    if (selectedCommunity) {
+      // Get the current path to extract the section
+      const pathname = window.location.pathname;
+      const basePath = '/dashboard';
+      const currentPath = pathname.replace(basePath, '');
+      const segments = currentPath.split('/').filter(Boolean);
+      
+      // Determine if we're in a section or at the dashboard root
+      let section = '';
+      if (segments.length > 0 && ['messages', 'members', 'subscription', 'suspense-example'].includes(segments[0])) {
+        section = segments[0];
+      }
+      
+      // Use the community ID directly as the URL parameter
+      const communityId = selectedCommunity.id;
+      
+      // Navigate to the section with the community ID
+      const newPath = section 
+        ? `/dashboard/${section}/${communityId}` 
+        : `/dashboard/${communityId}`;
+      
+      console.log('Navigating to:', newPath);
+      
+      // Call the onChange handler first to update the parent state
+      onChange(communityId);
+      
+      // Use window.location for a hard navigation to ensure it works
+      window.location.href = newPath;
+    } else {
+      // Still call the onChange handler if we can't navigate
+      onChange(communityId);
+    }
+  };
+
   return (
     <EnhancedSelect
       options={options}
       value={value}
-      onChange={onChange}
+      onChange={handleChange}
       placeholder={placeholder}
       className={className}
     />

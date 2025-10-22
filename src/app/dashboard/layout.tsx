@@ -57,21 +57,54 @@ export default function DashboardLayout({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
 
-  // Query for communities
+  // Query for communities - make sure this is defined before handleCommunityChange
   const communitiesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'communities'), where('name', '!=', ''), limit(20));
+    return query(collection(firestore, 'communities'), where('name', '!=', ''));
   }, [firestore]);
   
   const { data: communities, isLoading } = useCollection<Community>(communitiesQuery);
   
-  // Select first community by default
+  // Extract community ID directly from URL if present
+  const communityIdFromUrl = React.useMemo(() => {
+    const segments = pathname.split('/');
+    
+    // Check if there's a segment after /dashboard/ that could be a community ID
+    if (segments.length > 2 && segments[2] !== '') {
+      // If it's a direct child of /dashboard/
+      if (!['messages', 'members', 'subscription', 'suspense-example'].includes(segments[2])) {
+        return segments[2]; // This is likely a community ID
+      }
+      // If it's under a section like /dashboard/messages/{communityId}
+      else if (segments.length > 3 && segments[3] !== '') {
+        return segments[3]; // This is likely a community ID under a section
+      }
+    }
+    return null;
+  }, [pathname]);
+
+  // Set selected community from URL parameter as highest priority
   useEffect(() => {
-    if (communities?.length && !selectedCommunityId) {
+    if (communityIdFromUrl && communities?.length) {
+      // Only update if it's different to avoid loops
+      if (communityIdFromUrl !== selectedCommunityId) {
+        console.log('Setting community from URL:', communityIdFromUrl);
+        setSelectedCommunityId(communityIdFromUrl);
+        
+        // Also find and set the community object
+        const community = communities.find(c => c.id === communityIdFromUrl);
+        if (community) {
+          setSelectedCommunity(community);
+        }
+      }
+    }
+    // Only select first community if no community ID in URL and none selected yet
+    else if (communities?.length && !selectedCommunityId && !communityIdFromUrl) {
+      console.log('Auto-selecting first community as fallback');
       setSelectedCommunityId(communities[0].id);
       setSelectedCommunity(communities[0]);
     }
-  }, [communities, selectedCommunityId]);
+  }, [communities, selectedCommunityId, communityIdFromUrl]);
   
   // Update selected community when ID changes
   useEffect(() => {
@@ -83,44 +116,28 @@ export default function DashboardLayout({
     }
   }, [selectedCommunityId, communities]);
   
-  // Listen for community selection from URL
-  useEffect(() => {
-    const handleCommunitySelectedEvent = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail && customEvent.detail.id) {
-        setSelectedCommunityId(customEvent.detail.id);
-      }
-    };
-    
-    document.addEventListener('communitySelected', handleCommunitySelectedEvent);
-    
-    return () => {
-      document.removeEventListener('communitySelected', handleCommunitySelectedEvent);
-    };
-  }, []);
+  // We've replaced this with the more comprehensive communityIdFromUrl logic above
   
   // Handle community selection change
   const handleCommunityChange = (communityId: string) => {
+    console.log('Layout handleCommunityChange called with:', communityId);
     setSelectedCommunityId(communityId);
     
-    // Find the selected community to get its slug
-    if (communities?.length) {
-      const selectedCommunity = communities.find(community => community.id === communityId);
-      if (selectedCommunity?.slug) {
-        // Extract the current section from the path (e.g., messages, members, etc.)
-        const basePath = '/dashboard';
-        const currentPath = pathname.replace(basePath, '');
-        const segments = currentPath.split('/').filter(Boolean);
-        const firstSegment = segments[0] || ''; // Get the first segment (section)
-        
-        // Navigate to the section with the community slug
-        const newPath = firstSegment 
-          ? `/dashboard/${firstSegment}/${selectedCommunity.slug}` 
-          : `/dashboard/${selectedCommunity.slug}`;
-        
-        router.push(newPath);
-      }
-    }
+    // Extract the current section from the path (e.g., messages, members, etc.)
+    const basePath = '/dashboard';
+    const currentPath = pathname.replace(basePath, '');
+    const segments = currentPath.split('/').filter(Boolean);
+    const firstSegment = segments[0] || ''; // Get the first segment (section)
+    
+    // Navigate to the section with the community ID directly
+    const newPath = firstSegment 
+      ? `/dashboard/${firstSegment}/${communityId}` 
+      : `/dashboard/${communityId}`;
+    
+    console.log('Navigating to:', newPath);
+    
+    // Use window.location for a hard navigation to ensure it works
+    window.location.href = newPath;
   };
 
   // Dynamic navigation based on selected community
@@ -147,15 +164,15 @@ export default function DashboardLayout({
         </div>
         <nav className={styles.nav}>
           {navItems.map((item) => {
-            // Create dynamic href with community slug if available
-            const href = selectedCommunity?.slug 
-              ? `${item.href}/${selectedCommunity.slug}` 
+            // Create dynamic href with community ID if available
+            const href = selectedCommunityId 
+              ? `${item.href}/${selectedCommunityId}` 
               : item.href;
               
-            // Check if this route is active - either exact match or includes both the route and slug
+            // Check if this route is active - either exact match or includes both the route and community ID
             const isActive = pathname === item.href || 
               (pathname.includes(item.href) && 
-               (selectedCommunity?.slug ? pathname.includes(selectedCommunity.slug) : true));
+               (selectedCommunityId ? pathname.includes(selectedCommunityId) : true));
             
             return (
               <Link
