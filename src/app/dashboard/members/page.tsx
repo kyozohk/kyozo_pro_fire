@@ -20,7 +20,7 @@ const MembersPage: React.FC = () => {
       </div>
 
       <div className={styles.communitySelector}>
-        <Suspense fallback={<Loading message="Loading communities..." size="small" />}>
+        <Suspense fallback={<div className={styles.dropdownSkeleton}></div>}>
           <CommunitySelect
             value={selectedCommunityId}
             onChange={setSelectedCommunityId}

@@ -21,7 +21,9 @@
   --error-color-rgb: 255, 110, 110;
   --border-color: #333;
   --input-bg: #111;
+  --input-background: rgba(255, 255, 255, 0.05);
   --text-secondary: #999;
+  --text-tertiary: #666;
   
   // Font family variables
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
@@ -39,7 +41,7 @@
   --kyozo-pink: var(--accent-pink);
   
   // Dashboard Layout Variables
-  --sidebar-width: 18rem;
+  --sidebar-width: 12rem;
   --sidebar-width-mobile: 4rem;
   --header-height: 4rem;
   --header-height-mobile: 3.5rem;

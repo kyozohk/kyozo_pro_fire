@@ -14,7 +14,7 @@ import {
   LayoutGrid,
   ChevronDown
 } from 'lucide-react';
-import { CommunitySelect, Loading } from '@/components/dashboard';
+import { SuspenseCommunitySelect, Loading } from '@/components/dashboard';
 import styles from './layout.module.scss';
 
 export default function DashboardLayout({
@@ -55,6 +55,7 @@ export default function DashboardLayout({
     { href: '/dashboard/members', label: 'Members', icon: <Users size={20} /> },
     { href: '/dashboard/settings', label: 'Settings', icon: <Settings size={20} /> },
     { href: '/dashboard/examples', label: 'Examples', icon: <LayoutGrid size={20} /> },
+    { href: '/dashboard/suspense-example', label: 'Suspense Demo', icon: <LayoutGrid size={20} /> },
   ];
 
   return (
@@ -62,8 +63,12 @@ export default function DashboardLayout({
       <aside className={`${styles.sidebar} ${isMobileMenuOpen ? styles.open : ''}`}>
         <div className={styles.logoContainer}>          
           <div className={styles.communitySelector}>
-            <Suspense fallback={<div className={styles.loadingDropdown}>Loading communities...</div>}>
-              <CommunitySelect
+            <Suspense fallback={
+              <div className={styles.dropdownSkeleton}>
+                <span className="sr-only">Loading communities...</span>
+              </div>
+            }>
+              <SuspenseCommunitySelect
                 value={selectedCommunityId}
                 onChange={setSelectedCommunityId}
                 placeholder="Select a community"

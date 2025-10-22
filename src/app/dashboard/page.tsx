@@ -1,8 +1,8 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React from 'react';
 import DashboardContent from './DashboardContent';
-import { Loading } from '@/components/dashboard';
+import SuspenseWithErrorBoundary from '@/components/common/SuspenseWithErrorBoundary';
 
 // This is a wrapper component that uses Suspense
 export default function DashboardPage() {
@@ -21,8 +21,23 @@ export default function DashboardPage() {
   };
 
   return (
-    <Suspense fallback={<Loading message="Loading dashboard..." size="large" />}>
+    <SuspenseWithErrorBoundary
+      loadingMessage="Loading dashboard..."
+      loadingSize="large"
+      errorFallback={
+        <div className="p-8 text-center">
+          <h2 className="text-xl font-bold text-red-500">Error</h2>
+          <p className="mt-2">Failed to load dashboard data</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          >
+            Retry
+          </button>
+        </div>
+      }
+    >
       <DashboardContent stats={initialStats} />
-    </Suspense>
+    </SuspenseWithErrorBoundary>
   );
 }

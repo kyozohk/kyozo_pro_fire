@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useEffect, Suspense } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import React, { useState, useRef, useEffect } from 'react';
+import { useFirestore, useMemoFirebase } from '@/firebase';
+import { useSuspenseQuery } from '@/firebase/hooks/use-suspense-query';
 import { collection, query, where, DocumentData } from 'firebase/firestore';
 import { ChevronDown, Search } from 'lucide-react';
-import Loading from './Loading';
 import styles from './CommunitySelect.module.scss';
 
 // Types
@@ -16,7 +16,7 @@ interface Community extends DocumentData {
   slug?: string;
 }
 
-interface CommunitySelectProps {
+interface SuspenseCommunitySelectProps {
   value: string;
   onChange: (communityId: string) => void;
   placeholder?: string;
@@ -24,26 +24,43 @@ interface CommunitySelectProps {
   showSearch?: boolean;
 }
 
-// This is the component that actually loads the data
-const CommunitySelectContent: React.FC<CommunitySelectProps> = ({
+// This component will be used with Suspense
+const SuspenseCommunitySelect: React.FC<SuspenseCommunitySelectProps> = ({
   value,
   onChange,
   placeholder = 'Select a community',
   className = '',
   showSearch = true
 }) => {
+  console.log('🔎 SuspenseCommunitySelect - Component rendering');
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const selectRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
   
+  console.log('🔥 Firestore instance:', firestore ? 'Available' : 'Not available');
+  
   // Query for communities
   const communitiesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'communities'), where('name', '!=', ''));
+    console.log('📚 Creating communities query...');
+    if (!firestore) {
+      console.log('⚠️ No firestore instance available');
+      return null;
+    }
+    const q = query(collection(firestore, 'communities'), where('name', '!=', ''));
+    console.log('✅ Query created:', q ? 'Valid query' : 'Invalid query');
+    return q;
   }, [firestore]);
   
-  const { data: communities, isLoading, error } = useCollection<Community>(communitiesQuery);
+  console.log('🔍 About to call useSuspenseQuery with query:', communitiesQuery ? 'Valid query' : 'No query');
+  
+  // Use our suspense query hook
+  let communities: Community[] = [];
+  
+  // We don't need a try-catch here because Suspense will handle the thrown promise
+  // and Error Boundary will handle any errors
+  communities = useSuspenseQuery<Community>(communitiesQuery);
+  console.log('🎉 Communities data received:', communities?.length || 0, 'communities');
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -58,30 +75,18 @@ const CommunitySelectContent: React.FC<CommunitySelectProps> = ({
   }, []);
 
   // Filter communities based on search query
-  const filteredCommunities = communities?.filter(community => 
+  const filteredCommunities = communities?.filter((community: Community) => 
     community.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Find selected community
-  const selectedCommunity = communities?.find(community => community.id === value);
+  const selectedCommunity = communities?.find((community: Community) => community.id === value);
 
   const handleSelect = (communityId: string) => {
     onChange(communityId);
     setIsOpen(false);
     setSearchQuery('');
   };
-
-  if (isLoading) {
-    return <Loading message="Loading communities..." size="small" />;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center p-4 text-red-500">
-        <p>Error loading communities: {error.message}</p>
-      </div>
-    );
-  }
 
   return (
     <div className={`${styles.selectContainer} ${className}`} ref={selectRef}>
@@ -91,14 +96,14 @@ const CommunitySelectContent: React.FC<CommunitySelectProps> = ({
       >
         {selectedCommunity ? (
           <div className={styles.selectedOption}>
-            {selectedCommunity.logoURL || selectedCommunity.communityProfileImage ? (
+            {selectedCommunity.logoURL ? (
               <img 
-                src={selectedCommunity.logoURL || selectedCommunity.communityProfileImage} 
+                src={selectedCommunity.logoURL} 
                 alt={`${selectedCommunity.name} logo`}
-                className={styles.communityLogo}
+                className={`${styles.communityLogo} ${styles.communityIcon}`}
               />
             ) : (
-              <div className={styles.communityLogoPlaceholder}>
+              <div className={`${styles.communityLogoPlaceholder} ${styles.communityIcon}`}>
                 {selectedCommunity.name?.charAt(0)?.toUpperCase() || 'C'}
               </div>
             )}
@@ -131,20 +136,20 @@ const CommunitySelectContent: React.FC<CommunitySelectProps> = ({
               {communities?.length === 0 ? 'No communities available' : 'No matching communities'}
             </div>
           ) : (
-            filteredCommunities.map((community) => (
+            filteredCommunities.map((community: Community) => (
               <div
                 key={community.id}
                 className={`${styles.option} ${community.id === value ? styles.selected : ''}`}
                 onClick={() => handleSelect(community.id)}
               >
-                {community.logoURL || community.communityProfileImage ? (
+                {community.logoURL ? (
                   <img 
-                    src={community.logoURL || community.communityProfileImage} 
+                    src={community.logoURL} 
                     alt={`${community.name} logo`}
-                    className={styles.communityLogo}
+                    className={`${styles.communityLogo} ${styles.communityIcon}`}
                   />
                 ) : (
-                  <div className={styles.communityLogoPlaceholder}>
+                  <div className={`${styles.communityLogoPlaceholder} ${styles.communityIcon}`}>
                     {community.name?.charAt(0)?.toUpperCase() || 'C'}
                   </div>
                 )}
@@ -158,13 +163,4 @@ const CommunitySelectContent: React.FC<CommunitySelectProps> = ({
   );
 };
 
-// This is the wrapper component with Suspense
-const CommunitySelect: React.FC<CommunitySelectProps> = (props) => {
-  return (
-    <Suspense fallback={<Loading message="Loading..." size="small" />}>
-      <CommunitySelectContent {...props} />
-    </Suspense>
-  );
-};
-
-export default CommunitySelect;
+export default SuspenseCommunitySelect;
