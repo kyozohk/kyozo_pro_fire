@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import styles from '../../Dashboard.module.scss';
-import { MessageSquare, Search, Send, Loader2, ServerCrash } from 'lucide-react';
+import { MessageSquare, Search, Send, Loader2, ServerCrash, User, Crown } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit, DocumentData } from 'firebase/firestore';
-import Image from 'next/image';
+import { collection, query, where, orderBy, DocumentData, doc, getDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import styles from './MessagesPage.module.scss';
 
 // --- TYPES ---
 interface Community extends DocumentData {
@@ -35,10 +35,13 @@ interface Message extends DocumentData {
 interface UserProfile extends DocumentData {
   id: string;
   fullName?: string;
+  name?: string;
+  displayName?: string;
   phoneNumber?: string;
+  phone?: string;
+  waNumber?: string;
   role?: string;
   profileImage?: string;
-  [key: string]: any;
 }
 
 interface UserWithMessages {
@@ -66,41 +69,51 @@ const formatDate = (date: any) => {
   return format(new Date(date), "HH:mm • dd/MMM/yyyy");
 };
 
+function RoleIcon({ role }: { role?: string }) {
+  switch (role?.toLowerCase()) {
+    case 'admin':
+    case 'commu_leader':
+      return <Crown className="w-5 h-5 text-yellow-500" />;
+    case 'user':
+      return <User className="w-5 h-5 text-blue-500" />;
+    default:
+      return <User className="w-5 h-5 text-gray-500" />;
+  }
+}
+
 function LoadingSpinner({ text }: { text: string }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-text-secondary">
-      <Loader2 className="h-12 w-12 animate-spin" />
-      <p className="text-lg font-medium">{text}</p>
+    <div className={styles.loadingContainer}>
+      <Loader2 className={styles.loadingSpinner} />
+      <p>{text}</p>
     </div>
   );
 }
 
 function ErrorDisplay({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-destructive">
-      <ServerCrash className="h-12 w-12" />
-      <p className="text-lg font-medium">An Error Occurred</p>
-      <p className="text-sm font-mono bg-destructive/10 p-2 rounded-md">{message}</p>
+    <div className={styles.errorContainer}>
+      <ServerCrash className={styles.errorIcon} />
+      <p className={styles.errorTitle}>An Error Occurred</p>
+      <p className={styles.errorMessage}>{message}</p>
     </div>
   );
 }
 
 function MessageContent({ message }: { message: Message }) {
   return (
-    <div className="space-y-2">
+    <div className={styles.messageContent}>
       {message.messageType === 'image' && message.image?.url ? (
-        <div className="space-y-2">
-          <Image 
+        <div className={styles.imageContainer}>
+          <img 
             src={message.image.url} 
             alt={message.image.caption || 'Image message'} 
-            width={300} 
-            height={300} 
-            className="rounded-md object-cover border" 
+            className={styles.messageImage} 
           />
-          {message.image.caption && <p className="text-sm italic">{message.image.caption}</p>}
+          {message.image.caption && <p className={styles.imageCaption}>{message.image.caption}</p>}
         </div>
       ) : (
-        <p className="whitespace-pre-wrap">{message.text || <span className="italic">[Empty Message]</span>}</p>
+        <p className={styles.messageText}>{message.text || <span className={styles.emptyMessage}>[Empty Message]</span>}</p>
       )}
     </div>
   );
@@ -117,35 +130,50 @@ export default function MessagesPage() {
   const [fullConversation, setFullConversation] = useState<Message[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [messageText, setMessageText] = useState<string>('');
+  const [community, setCommunity] = useState<Community | null>(null);
 
-  // Query for community data
-  const communityQuery = useMemoFirebase(() => {
-    if (!firestore || !communityId) return null;
-    return query(collection(firestore, 'communities'), where('id', '==', communityId));
+  // Fetch community data directly
+  useEffect(() => {
+    const fetchCommunityData = async () => {
+      if (!firestore || !communityId) return;
+      
+      try {
+        const communityDocRef = doc(firestore, 'communities', communityId);
+        const communityDoc = await getDoc(communityDocRef);
+        
+        if (communityDoc.exists()) {
+          const communityData = communityDoc.data() as Community;
+          setCommunity({
+            ...communityData,
+            id: communityDoc.id,
+          });
+          console.log("Community data loaded:", communityData.name);
+        } else {
+          console.error("Community not found");
+        }
+      } catch (err) {
+        console.error('Error fetching community data:', err);
+      }
+    };
+    
+    fetchCommunityData();
   }, [firestore, communityId]);
-  const { data: communityData, isLoading: loadingCommunity, error: communityError } = useCollection<Community>(communityQuery);
 
-  // Query for messages
+  // Query for ALL messages (not filtered by community)
   const messagesQuery = useMemoFirebase(() => {
-    if (!firestore || !communityId) return null;
-    return query(
-      collection(firestore, 'messages'),
-      where('community', '==', communityId)
-    );
-  }, [firestore, communityId]);
+    if (!firestore) return null;
+    return collection(firestore, 'messages');
+  }, [firestore]);
   const { data: allMessages, isLoading: loadingMessages, error: messagesError } = useCollection<Message>(messagesQuery);
 
-  // Query for sent messages (if you have a separate collection)
+  // Query for ALL sent messages
   const sentMessagesQuery = useMemoFirebase(() => {
-    if (!firestore || !communityId) return null;
-    return query(
-      collection(firestore, 'sendwamessagehistories'),
-      where('community', '==', communityId)
-    );
-  }, [firestore, communityId]);
+    if (!firestore) return null;
+    return collection(firestore, 'sendwamessagehistories');
+  }, [firestore]);
   const { data: allSentMessages, isLoading: loadingSentMessages, error: sentMessagesError } = useCollection<Message>(sentMessagesQuery);
   
-  // Query for users
+  // Query for ALL users
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'users');
@@ -154,20 +182,30 @@ export default function MessagesPage() {
 
   // Process data when dependencies change
   useEffect(() => {
-    if (!communityId || !allMessages || !allUsers || !communityData || !allSentMessages) {
-      setInboxData(null);
-      setSelectedUser(null);
-      setFullConversation([]);
+    if (!communityId || !allMessages || !allUsers || !community || !allSentMessages) {
+      console.log("Missing data:", {
+        communityId: !!communityId,
+        allMessages: !!allMessages,
+        allUsers: !!allUsers,
+        community: !!community,
+        allSentMessages: !!allSentMessages
+      });
       return;
     }
 
-    const selectedCommunity = communityData[0];
-    if (!selectedCommunity) return;
+    console.log('Processing messages data:', {
+      communityId,
+      messages: allMessages.length,
+      sentMessages: allSentMessages.length,
+      users: allUsers.length
+    });
 
-    // Combine received and sent messages for the community
-    const communityMessages = allMessages || [];
-    const communitySentMessages = allSentMessages || [];
+    // Filter messages for this community
+    const communityMessages = allMessages.filter(msg => msg.community === communityId);
+    const communitySentMessages = allSentMessages.filter(msg => msg.community === communityId);
     const combinedCommunityMessages = [...communityMessages, ...communitySentMessages];
+    
+    console.log(`Found ${communityMessages.length} received messages and ${communitySentMessages.length} sent messages for community`);
     
     // Create a set of user IDs who have sent or received a message in this community
     const usersInvolved = new Set<string>();
@@ -175,6 +213,8 @@ export default function MessagesPage() {
       if (msg.sender) usersInvolved.add(msg.sender);
       msg.readBy?.forEach(r => usersInvolved.add(r.userId));
     });
+    
+    console.log(`Found ${usersInvolved.size} users involved in messages`);
     
     const usersMap = new Map(allUsers.map(user => [user.id, user]));
 
@@ -193,13 +233,13 @@ export default function MessagesPage() {
 
         return {
           userId: userId,
-          name: user.fullName || 'Unknown User',
-          phoneNumber: user.phoneNumber || user.participation?.phoneNumber || user.waNumber || user.phone || 'Unknown Phone',
+          name: user.fullName || user.name || user.displayName || 'Unknown User',
+          phoneNumber: user.phoneNumber || user.phone || user.waNumber || 'Unknown Phone',
           role: user.role || 'user',
           profileImage: user.profileImage,
           messages: userMessages,
           _raw: user,
-        };
+        } as UserWithMessages;
       })
       .filter((u): u is UserWithMessages => !!u);
 
@@ -210,8 +250,10 @@ export default function MessagesPage() {
       return lastMsgTimeB - lastMsgTimeA;
     });
     
+    console.log(`Processed ${responseUsers.length} users with messages`);
+    
     setInboxData({
-      communityName: selectedCommunity.name,
+      communityName: community.name,
       users: responseUsers,
     });
     
@@ -221,6 +263,7 @@ export default function MessagesPage() {
     // If not, select the first user in the list
     if (!currentUserStillExists && responseUsers.length > 0) {
       currentUserStillExists = responseUsers[0];
+      console.log("Auto-selecting first user:", currentUserStillExists.name);
     }
     
     if (currentUserStillExists) {
@@ -233,12 +276,13 @@ export default function MessagesPage() {
       
       // Sort messages by creation time (oldest first)
       conversationMessages.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+      console.log(`Loaded ${conversationMessages.length} messages for conversation with ${currentUserStillExists.name}`);
       setFullConversation(conversationMessages);
     } else {
       setSelectedUser(null);
       setFullConversation([]);
     }
-  }, [communityId, allMessages, allSentMessages, allUsers, communityData, selectedUser]);
+  }, [communityId, allMessages, allSentMessages, allUsers, community, selectedUser]);
 
   // Filter users based on search query
   const filteredUsers = useMemo(() => {
@@ -260,163 +304,192 @@ export default function MessagesPage() {
     setMessageText('');
   };
 
-  const isLoading = loadingCommunity || loadingMessages || loadingUsers || loadingSentMessages;
-  const error = communityError || messagesError || usersError || sentMessagesError;
+  const handleSelectUser = (user: UserWithMessages) => {
+    setSelectedUser(user);
+    
+    // Load the full conversation for the selected user
+    if (allMessages && allSentMessages) {
+      const communityMessages = allMessages.filter(msg => msg.community === communityId);
+      const communitySentMessages = allSentMessages.filter(msg => msg.community === communityId);
+      const combinedCommunityMessages = [...communityMessages, ...communitySentMessages];
+      
+      const conversationMessages = combinedCommunityMessages.filter(msg => 
+        (msg.readBy?.some(r => r.userId === user.userId)) || (msg.sender === user.userId)
+      );
+      
+      // Sort messages by creation time (oldest first)
+      conversationMessages.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+      console.log(`Loaded ${conversationMessages.length} messages for conversation with ${user.name}`);
+      setFullConversation(conversationMessages);
+    } else {
+      setFullConversation([]);
+    }
+  };
+
+  const isLoading = loadingMessages || loadingUsers || loadingSentMessages || !community;
+  const error = messagesError || sentMessagesError || usersError;
 
   return (
-    <div className={styles.dashboardContent}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Messages</h1>
-          <p className={styles.subtitle}>
-            {inboxData ? `Community: ${inboxData.communityName}` : 'Loading community...'}
+    <div className={styles.messagesContainer}>
+      <div className={styles.usersList}>
+        <div className={styles.usersHeader}>
+          <h2 className={styles.usersTitle}>Messages</h2>
+          <p className={styles.usersSubtitle}>
+            {community ? community.name : 'Loading community...'}
           </p>
         </div>
-      </div>
-
-      <div className="bg-card-bg rounded-lg overflow-hidden flex h-[calc(100vh-12rem)]">
-        {/* Users sidebar */}
-        <div className="w-1/3 border-r border-border flex flex-col">
-          <div className="p-3 border-b border-border">
-            <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary" />
-              <input
-                type="text"
-                placeholder="Search users..."
-                className="w-full bg-background rounded-md py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-accent-pink"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="overflow-y-auto flex-1">
-            {isLoading && !inboxData ? (
-              <LoadingSpinner text="Loading users..." />
-            ) : error ? (
-              <ErrorDisplay message={error.message} />
-            ) : !inboxData || inboxData.users.length === 0 ? (
-              <div className="p-4 text-center text-text-secondary mt-8">
-                {isLoading ? 'Loading...' : 'No conversations in this community.'}
-              </div>
-            ) : (
-              filteredUsers.map(user => (
-                <div
-                  key={user.userId}
-                  className={`flex items-center p-3 cursor-pointer hover:bg-background transition-colors ${
-                    selectedUser?.userId === user.userId ? 'bg-background border-l-2 border-accent-pink' : ''
-                  }`}
-                  onClick={() => setSelectedUser(user)}
-                >
-                  <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
-                    {user.profileImage ? (
-                      <img src={user.profileImage} alt={user.name} className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      <span>{user.name.charAt(0).toUpperCase()}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{user.name}</p>
-                    <p className="text-xs text-text-secondary truncate">{user.phoneNumber}</p>
-                    {user.messages.length > 0 && (
-                      <p className="text-xs text-text-secondary truncate mt-1">
-                        {user.messages[0].text || '[Media Message]'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+        
+        <div className="p-3 border-b border-border">
+          <div className="relative">
+            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              className={styles.searchInput}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
         
-        {/* Messages area */}
-        <div className="flex-1 flex flex-col">
-          {selectedUser ? (
-            <>
-              {/* Chat header */}
-              <div className="p-4 border-b border-border flex items-center">
-                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
-                  {selectedUser.profileImage ? (
-                    <img src={selectedUser.profileImage} alt={selectedUser.name} className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    <span>{selectedUser.name.charAt(0).toUpperCase()}</span>
-                  )}
-                </div>
-                <div>
-                  <p className="font-medium">{selectedUser.name}</p>
-                  <p className="text-xs text-text-secondary">{selectedUser.phoneNumber}</p>
-                </div>
-              </div>
-              
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="space-y-4 p-4">
-                  {fullConversation.map(message => {
-                    const isSentByUser = message.sender === selectedUser.userId;
-                    
-                    return (
-                      <div 
-                        key={message.id} 
-                        className={`flex items-end gap-2 ${isSentByUser ? 'justify-start' : 'justify-end'}`}
-                      >
-                        {isSentByUser && (
-                          <div className="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0">
-                            {selectedUser.profileImage ? (
-                              <img src={selectedUser.profileImage} alt={selectedUser.name} className="w-full h-full rounded-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full rounded-full flex items-center justify-center text-white text-xs">
-                                {selectedUser.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
+        <div className={styles.userList}>
+          {isLoading ? (
+            <LoadingSpinner text="Loading users..." />
+          ) : error ? (
+            <ErrorDisplay message={error.message} />
+          ) : !inboxData || inboxData.users.length === 0 ? (
+            <div className={styles.emptyState}>
+              <MessageSquare className={styles.emptyStateIcon} />
+              <p>No conversations in this community.</p>
+            </div>
+          ) : (
+            <ul>
+              {filteredUsers.map(user => (
+                <li key={user.userId} className={styles.userItem}>
+                  <button
+                    onClick={() => handleSelectUser(user)}
+                    className={`${styles.userButton} ${selectedUser?.userId === user.userId ? styles.active : ''}`}
+                  >
+                    <div className={styles.userInfo}>
+                      <Avatar className={styles.userAvatar}>
+                        {user.profileImage ? (
+                          <AvatarImage src={user.profileImage} alt={user.name} />
+                        ) : (
+                          <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
                         )}
-                        <div className="max-w-[70%]">
-                          <div className={`p-3 rounded-lg ${
-                            isSentByUser ? 'bg-background' : 'bg-accent-blue/20'
-                          }`}>
-                            <MessageContent message={message} />
-                          </div>
-                          <p className={`text-xs text-text-secondary mt-1 ${isSentByUser ? 'text-left' : 'text-right'}`}>
-                            {formatDate(message.createdAt)}
-                          </p>
+                      </Avatar>
+                      <div className={styles.userDetails}>
+                        <div className={styles.userName}>
+                          <span>{user.name}</span>
+                          <RoleIcon role={user.role} />
                         </div>
-                        {!isSentByUser && (
-                          <div className="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0 flex items-center justify-center text-white text-xs">
-                            A
-                          </div>
+                        <p className={styles.userPhone}>{user.phoneNumber}</p>
+                        {user.messages.length > 0 && (
+                          <p className={styles.messagePreview}>
+                            {user.messages[0].text || '[Media Message]'}
+                          </p>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-              
-              {/* Message input */}
-              <form onSubmit={handleSendMessage} className="p-3 border-t border-border flex items-center">
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  className="flex-1 bg-background rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-accent-pink"
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  className="ml-2 p-2 bg-accent-pink rounded-md text-white hover:bg-accent-pink/90 transition-colors"
-                  disabled={!messageText.trim()}
-                >
-                  <Send size={18} />
-                </button>
-              </form>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-text-secondary">
-              <MessageSquare size={48} className="opacity-20 mb-4" />
-              <p>Select a user to view their conversation</p>
-            </div>
+                    </div>
+                    {user.messages.length > 0 && (
+                      <span className={styles.messageTime}>
+                        {formatDate(user.messages[0].createdAt)}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
+      </div>
+      
+      <div className={styles.conversation}>
+        {selectedUser ? (
+          <>
+            <div className={styles.conversationHeader}>
+              <Avatar className={styles.conversationAvatar}>
+                {selectedUser.profileImage ? (
+                  <AvatarImage src={selectedUser.profileImage} alt={selectedUser.name} />
+                ) : (
+                  <AvatarFallback>{selectedUser.name.charAt(0).toUpperCase()}</AvatarFallback>
+                )}
+              </Avatar>
+              <div className={styles.conversationUser}>
+                <h3 className={styles.conversationName}>{selectedUser.name}</h3>
+                <p className={styles.conversationPhone}>{selectedUser.phoneNumber}</p>
+              </div>
+            </div>
+            
+            <div className={styles.conversationBody}>
+              {fullConversation.length === 0 ? (
+                <div className={styles.emptyConversation}>
+                  <MessageSquare className={styles.emptyConversationIcon} />
+                  <p>No messages in this conversation.</p>
+                </div>
+              ) : (
+                fullConversation.map(message => {
+                  const isSentByUser = message.sender === selectedUser.userId;
+                  
+                  return (
+                    <div 
+                      key={message.id} 
+                      className={`${styles.messageWrapper} ${isSentByUser ? styles.userMessage : styles.systemMessage}`}
+                    >
+                      {!isSentByUser && (
+                        <Avatar className={styles.messageAvatar}>
+                          <AvatarFallback>A</AvatarFallback>
+                        </Avatar>
+                      )}
+                      
+                      <div className={styles.message}>
+                        <div className={`${styles.messageBubble} ${isSentByUser ? styles.userBubble : styles.systemBubble}`}>
+                          <MessageContent message={message} />
+                        </div>
+                        <span className={styles.messageTime}>
+                          {formatDate(message.createdAt)}
+                        </span>
+                      </div>
+                      
+                      {isSentByUser && (
+                        <Avatar className={styles.messageAvatar}>
+                          {selectedUser.profileImage ? (
+                            <AvatarImage src={selectedUser.profileImage} alt={selectedUser.name} />
+                          ) : (
+                            <AvatarFallback>{selectedUser.name.charAt(0).toUpperCase()}</AvatarFallback>
+                          )}
+                        </Avatar>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            
+            <form onSubmit={handleSendMessage} className="p-3 border-t border-border flex items-center">
+              <input
+                type="text"
+                placeholder="Type a message..."
+                className="flex-1 bg-background rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-accent-pink"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="ml-2 p-2 bg-accent-pink rounded-md text-white hover:bg-accent-pink/90 transition-colors"
+                disabled={!messageText.trim()}
+              >
+                <Send size={18} />
+              </button>
+            </form>
+          </>
+        ) : (
+          <div className={styles.emptyConversationState}>
+            <MessageSquare className={styles.emptyConversationStateIcon} />
+            <h3>Select a conversation</h3>
+            <p>Choose a user from the list to view their messages</p>
+          </div>
+        )}
       </div>
     </div>
   );

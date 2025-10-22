@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, DocumentData } from 'firebase/firestore';
-import { EnhancedMembersList } from '@/components/dashboard';
+import { EnhancedMembersList, CommunityPageLayout } from '@/components/dashboard';
 import styles from './MembersPage.module.scss';
 
 interface Member extends DocumentData {
@@ -92,16 +92,18 @@ export default function MembersPage() {
   }
   
   return (
-    <div className={styles.membersPage}>
-      <EnhancedMembersList
-        members={members}
-        onEdit={handleEdit}
-        onMessage={handleMessage}
-        onCall={handleCall}
-        onEmail={handleEmail}
-        onDelete={handleDelete}
-        onInvite={() => console.log('Invite member clicked')}
-      />
-    </div>
+    <CommunityPageLayout>
+      <div className={styles.membersPage}>
+        <EnhancedMembersList
+          members={members}
+          onEdit={handleEdit}
+          onMessage={handleMessage}
+          onCall={handleCall}
+          onEmail={handleEmail}
+          onDelete={handleDelete}
+          onInvite={() => console.log('Invite member clicked')}
+        />
+      </div>
+    </CommunityPageLayout>
   );
 }

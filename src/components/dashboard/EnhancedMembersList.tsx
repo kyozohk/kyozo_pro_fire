@@ -119,12 +119,7 @@ const EnhancedMembersList: React.FC<EnhancedMembersListProps> = ({
   };
 
   return (
-    <div className={`${styles.container} ${className}`}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Members</h1>
-        <p className={styles.subtitle}>Manage community members</p>
-      </div>
-      
+    <div className={`${styles.container} ${className}`}>      
       <div className={styles.controlsWrapper}>
         <div className={styles.searchAndInvite}>
           <div className={styles.searchWrapper}>
@@ -142,16 +137,6 @@ const EnhancedMembersList: React.FC<EnhancedMembersListProps> = ({
         </div>
         
         <div className={styles.controlsRight}>
-          <div className={styles.sortWrapper}>
-            <EnhancedSelect
-              options={sortOptions}
-              value={sortField}
-              onChange={handleSortChange}
-              placeholder="Sort by"
-              className={styles.sortSelect}
-            />
-          </div>
-          
           <div className={styles.viewToggle}>
             <button
               onClick={() => setViewMode('list')}
