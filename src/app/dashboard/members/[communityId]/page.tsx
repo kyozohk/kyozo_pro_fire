@@ -1,149 +1,220 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import styles from '../../Dashboard.module.scss';
-import { Search, UserPlus, Mail, MoreHorizontal, UserX } from 'lucide-react';
+import { Search, UserPlus, Mail, MoreHorizontal, UserX, Loader2, ServerCrash } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit, DocumentData } from 'firebase/firestore';
 
 interface Member extends DocumentData {
   id: string;
-  name: string;
+  fullName?: string;
+  name?: string; // Fallback if fullName doesn't exist
   email?: string;
-  photoURL?: string;
+  phoneNumber?: string;
+  profileImage?: string;
   joinDate?: any;
   lastActive?: any;
   role?: string;
+  participation?: {
+    phoneNumber?: string;
+  };
+  waNumber?: string;
+  phone?: string;
+  communityMemberships?: {
+    community: string;
+    fullName?: string;
+    phoneNumber?: string;
+    role?: string;
+  }[];
+}
+
+interface Community extends DocumentData {
+  id: string;
+  name: string;
 }
 
 const MembersPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [sortBy, setSortBy] = useState<string>('name');
+  const [sortBy, setSortBy] = useState<string>('fullName');
   const params = useParams();
   const communityId = params?.communityId as string;
   const firestore = useFirestore();
 
-  // Only try to fetch from the subcollection with a much higher limit
-  const membersQuery = useMemoFirebase(() => {
+  // Query for the specific community to get its details
+  const communityQuery = useMemoFirebase(() => {
+    if (!firestore || !communityId) return null;
+    return query(collection(firestore, 'communities'), where('id', '==', communityId));
+  }, [firestore, communityId]);
+  
+  const { data: communityData, isLoading: loadingCommunity, error: communityError } = useCollection<Community>(communityQuery);
+
+  // Query for users who are members of this community
+  const usersQuery = useMemoFirebase(() => {
     if (!firestore || !communityId) return null;
     
-    console.log(`Querying members for community ID: ${communityId}`);
+    console.log(`Querying users for community ID: ${communityId}`);
+    // There are two ways users might be associated with communities:
+    // 1. Through a communityMemberships array that contains community IDs
+    // 2. Through a direct communities array field
     return query(
-      collection(firestore, 'communities', communityId, 'members'),
-      orderBy(sortBy),
-      limit(1000) // Increased limit to fetch more members
+      collection(firestore, 'users'),
+      where('communities', 'array-contains', communityId)
     );
-  }, [firestore, communityId, sortBy]);
+  }, [firestore, communityId]);
 
-  const { data: members, isLoading, error } = useCollection<Member>(membersQuery);
-  
-  // Use mock data if no members are found or there's an error
-  const [useMockData, setUseMockData] = useState(false);
-  const [mockMembers, setMockMembers] = useState<Member[]>([]);
-  
-  // Generate mock data if needed
+  const { data: users, isLoading: loadingUsers, error: usersError } = useCollection<Member>(usersQuery);
+
+  // Alternative query for users with communityMemberships structure
+  // We need to use a different approach since array-contains needs to match the entire object
+  const usersMembershipQuery = useMemoFirebase(() => {
+    if (!firestore || !communityId) return null;
+    
+    console.log(`Querying users with communityMemberships for community ID: ${communityId}`);
+    // Get all users and filter them client-side based on communityMemberships
+    // This is not ideal for large collections but ensures we don't miss any users
+    return collection(firestore, 'users');
+  }, [firestore, communityId]);
+
+  const { data: usersMembership, isLoading: loadingUsersMembership, error: usersMembershipError } = useCollection<Member>(usersMembershipQuery);
+
+  // Debug information
   useEffect(() => {
-    if (!isLoading && (!members || members.length === 0 || error)) {
-      console.log('No members found or error occurred, using mock data');
-      setUseMockData(true);
-      
-      // Generate mock members - adding more for a realistic experience
-      const mockData: Member[] = [
-        {
-          id: '1',
-          name: 'John Smith',
-          email: 'john.smith@example.com',
-          role: 'Admin',
-          joinDate: { toDate: () => new Date(2023, 5, 15) },
-          lastActive: { toDate: () => new Date(2023, 9, 20) },
-        },
-        {
-          id: '2',
-          name: 'Sarah Johnson',
-          email: 'sarah.j@example.com',
-          role: 'Member',
-          joinDate: { toDate: () => new Date(2023, 7, 3) },
-          lastActive: { toDate: () => new Date(2023, 9, 21) },
-        },
-        {
-          id: '3',
-          name: 'Michael Chen',
-          email: 'mchen@example.com',
-          role: 'Member',
-          joinDate: { toDate: () => new Date(2023, 8, 12) },
-          lastActive: { toDate: () => new Date(2023, 9, 15) },
-        },
-        {
-          id: '4',
-          name: 'Emily Rodriguez',
-          email: 'emily.r@example.com',
-          role: 'Member',
-          joinDate: { toDate: () => new Date(2023, 6, 22) },
-          lastActive: { toDate: () => new Date(2023, 9, 18) },
-        },
-        {
-          id: '5',
-          name: 'David Kim',
-          email: 'dkim@example.com',
-          role: 'Moderator',
-          joinDate: { toDate: () => new Date(2023, 4, 10) },
-          lastActive: { toDate: () => new Date(2023, 9, 19) },
-        },
-        {
-          id: '6',
-          name: 'Jessica Taylor',
-          email: 'jtaylor@example.com',
-          role: 'Member',
-          joinDate: { toDate: () => new Date(2023, 8, 5) },
-          lastActive: { toDate: () => new Date(2023, 9, 17) },
-        },
-        {
-          id: '7',
-          name: 'Robert Wilson',
-          email: 'rwilson@example.com',
-          role: 'Member',
-          joinDate: { toDate: () => new Date(2023, 7, 18) },
-          lastActive: { toDate: () => new Date(2023, 9, 16) },
-        },
-        {
-          id: '8',
-          name: 'Lisa Wang',
-          email: 'lwang@example.com',
-          role: 'Member',
-          joinDate: { toDate: () => new Date(2023, 9, 1) },
-          lastActive: { toDate: () => new Date(2023, 9, 21) },
-        },
-        {
-          id: '9',
-          name: 'James Brown',
-          email: 'jbrown@example.com',
-          role: 'Member',
-          joinDate: { toDate: () => new Date(2023, 6, 30) },
-          lastActive: { toDate: () => new Date(2023, 9, 14) },
-        },
-        {
-          id: '10',
-          name: 'Sophia Martinez',
-          email: 'smartinez@example.com',
-          role: 'Moderator',
-          joinDate: { toDate: () => new Date(2023, 5, 25) },
-          lastActive: { toDate: () => new Date(2023, 9, 20) },
-        },
-      ];
-      
-      setMockMembers(mockData);
+    if (users) {
+      console.log(`Found ${users.length} users with direct communities array`);
     }
-  }, [members, isLoading, error]);
+    if (usersMembership) {
+      console.log(`Found ${usersMembership.length} total users to filter for communityMemberships`);
+      
+      // Log the structure of the first few users to understand the data format
+      if (usersMembership.length > 0) {
+        const sampleUser = usersMembership[0];
+        console.log('Sample user structure:', {
+          id: sampleUser.id,
+          name: sampleUser.fullName || sampleUser.name,
+          communityMemberships: sampleUser.communityMemberships
+        });
+      }
+    }
+  }, [users, usersMembership]);
 
-  // Use either real members or mock data
-  const membersToUse = useMockData ? mockMembers : (members || []);
-  
+  // Combine results from both queries
+  const allMembers = useMemo(() => {
+    const members = new Map<string, Member>();
+    
+    // Add users from direct communities array
+    if (users) {
+      users.forEach(user => {
+        members.set(user.id, user);
+      });
+    }
+    
+    // Add users from communityMemberships array - filter client-side
+    if (usersMembership) {
+      usersMembership.forEach(user => {
+        // Check if this user has the current communityId in their communityMemberships
+        let hasCommunityMembership = false;
+        
+        if (Array.isArray(user.communityMemberships)) {
+          // Check each membership in the array
+          hasCommunityMembership = user.communityMemberships.some(membership => {
+            // If membership is an object with a community property
+            if (typeof membership === 'object' && membership !== null) {
+              return (membership as any).community === communityId;
+            }
+            // If membership is a string, check direct equality
+            return membership === communityId;
+          });
+        } else if (typeof user.communityMemberships === 'object' && user.communityMemberships !== null) {
+          // If communityMemberships is an object (not an array), check if it has the communityId as a key
+          hasCommunityMembership = Object.values(user.communityMemberships).some(value => {
+            if (typeof value === 'object' && value !== null) {
+              // Use safer property access with type checking
+              return (value as any).community === communityId;
+            }
+            return value === communityId;
+          });
+        }
+        
+        // Debug individual user membership check
+        if (user.communityMemberships) {
+          console.log(`User ${user.id} (${user.fullName || user.name || 'Unknown'}): communityMembership check = ${hasCommunityMembership}`);
+        }
+
+        // Only add the user if they have a membership for this community
+        // and they haven't been added already
+        if (hasCommunityMembership && !members.has(user.id)) {
+          members.set(user.id, user);
+        }
+      });
+    }
+    
+    return Array.from(members.values());
+  }, [users, usersMembership]);
+
+  // Sort members based on selected sort field
+  // Debug the final members count
+  useEffect(() => {
+    if (allMembers) {
+      console.log(`Final members count: ${allMembers.length}`);
+    }
+  }, [allMembers]);
+
+  const sortedMembers = useMemo(() => {
+    if (!allMembers) return [];
+    
+    return [...allMembers].sort((a, b) => {
+      if (sortBy === 'fullName' || sortBy === 'name') {
+        const nameA = a.fullName || a.name || '';
+        const nameB = b.fullName || b.name || '';
+        return nameA.localeCompare(nameB);
+      } else if (sortBy === 'role') {
+        const roleA = a.role || '';
+        const roleB = b.role || '';
+        return roleA.localeCompare(roleB);
+      } else if (sortBy === 'joinDate') {
+        const dateA = a.joinDate?.seconds || 0;
+        const dateB = b.joinDate?.seconds || 0;
+        return dateB - dateA; // Most recent first
+      } else if (sortBy === 'lastActive') {
+        const dateA = a.lastActive?.seconds || 0;
+        const dateB = b.lastActive?.seconds || 0;
+        return dateB - dateA; // Most recent first
+      }
+      return 0;
+    });
+  }, [allMembers, sortBy]);
+
   // Filter members based on search
-  const filteredMembers = membersToUse.filter(member => 
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (member.email && member.email.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredMembers = useMemo(() => {
+    if (!sortedMembers) return [];
+    
+    return sortedMembers.filter(member => {
+      const name = member.fullName || member.name || '';
+      const email = member.email || '';
+      const phone = member.phoneNumber || member.participation?.phoneNumber || member.waNumber || member.phone || '';
+      
+      const searchLower = searchQuery.toLowerCase();
+      return name.toLowerCase().includes(searchLower) || 
+             email.toLowerCase().includes(searchLower) ||
+             phone.toLowerCase().includes(searchLower);
+    });
+  }, [sortedMembers, searchQuery]);
+
+  // Helper function to get the display name
+  const getDisplayName = (member: Member) => {
+    return member.fullName || member.name || 'Unknown User';
+  };
+
+  // Helper function to get the email or phone
+  const getContactInfo = (member: Member) => {
+    if (member.email) return member.email;
+    return member.phoneNumber || member.participation?.phoneNumber || member.waNumber || member.phone || 'No contact info';
+  };
+
+  const isLoading = loadingCommunity || loadingUsers || loadingUsersMembership;
+  const error = communityError || usersError || usersMembershipError;
 
   return (
     <div className={styles.dashboardContent}>
@@ -151,7 +222,7 @@ const MembersPage: React.FC = () => {
         <div>
           <h1 className={styles.title}>Members</h1>
           <p className={styles.subtitle}>
-            Manage community members
+            {communityData && communityData.length > 0 ? `Community: ${communityData[0].name}` : 'Manage community members'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -182,10 +253,10 @@ const MembersPage: React.FC = () => {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
-              <option value="name">Name</option>
+              <option value="fullName">Name</option>
+              <option value="role">Role</option>
               <option value="joinDate">Join Date</option>
               <option value="lastActive">Last Active</option>
-              <option value="role">Role</option>
             </select>
           </div>
         </div>
@@ -197,34 +268,34 @@ const MembersPage: React.FC = () => {
               <tr className="bg-background text-left">
                 <th className="px-4 py-3 font-medium">Member</th>
                 <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Joined</th>
-                <th className="px-4 py-3 font-medium">Last Active</th>
+                <th className="px-4 py-3 font-medium">Contact</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                [...Array(5)].map((_, i) => (
-                  <tr key={i} className="border-t border-border animate-pulse">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-700"></div>
-                        <div>
-                          <div className="h-4 bg-gray-700 rounded w-24 mb-1"></div>
-                          <div className="h-3 bg-gray-700 rounded w-32"></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3"><div className="h-4 bg-gray-700 rounded w-16"></div></td>
-                    <td className="px-4 py-3"><div className="h-4 bg-gray-700 rounded w-24"></div></td>
-                    <td className="px-4 py-3"><div className="h-4 bg-gray-700 rounded w-24"></div></td>
-                    <td className="px-4 py-3"><div className="h-4 bg-gray-700 rounded w-16"></div></td>
-                  </tr>
-                ))
+                <tr>
+                  <td colSpan={4} className="px-4 py-8">
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-accent-pink" />
+                      <p className="text-text-secondary">Loading members...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8">
+                    <div className="flex flex-col items-center justify-center gap-4 text-destructive">
+                      <ServerCrash className="h-8 w-8" />
+                      <p className="font-medium">An Error Occurred</p>
+                      <p className="text-sm font-mono bg-destructive/10 p-2 rounded-md">{error.message}</p>
+                    </div>
+                  </td>
+                </tr>
               ) : filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-text-secondary">
-                    No members found matching your search
+                  <td colSpan={4} className="px-4 py-8 text-center text-text-secondary">
+                    {searchQuery ? 'No members found matching your search' : 'No members found in this community'}
                   </td>
                 </tr>
               ) : (
@@ -233,15 +304,15 @@ const MembersPage: React.FC = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
-                          {member.photoURL ? (
-                            <img src={member.photoURL} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                          {member.profileImage ? (
+                            <img src={member.profileImage} alt={getDisplayName(member)} className="w-full h-full rounded-full object-cover" />
                           ) : (
-                            <span className="text-white">{member.name.charAt(0).toUpperCase()}</span>
+                            <span className="text-white">{getDisplayName(member).charAt(0).toUpperCase()}</span>
                           )}
                         </div>
                         <div>
-                          <p className="font-medium">{member.name}</p>
-                          <p className="text-xs text-text-secondary">{member.email}</p>
+                          <p className="font-medium">{getDisplayName(member)}</p>
+                          <p className="text-xs text-text-secondary">{member.id}</p>
                         </div>
                       </div>
                     </td>
@@ -251,14 +322,7 @@ const MembersPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {member.joinDate?.toDate?.() ? 
-                        member.joinDate.toDate().toLocaleDateString() : 
-                        'Unknown'}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {member.lastActive?.toDate?.() ? 
-                        member.lastActive.toDate().toLocaleDateString() : 
-                        'Never'}
+                      {getContactInfo(member)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">

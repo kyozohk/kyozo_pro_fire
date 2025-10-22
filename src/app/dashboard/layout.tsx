@@ -147,6 +147,7 @@ export default function DashboardLayout({
     { href: '/dashboard/members', label: 'Members', icon: <Users size={20} /> },
     { href: '/dashboard/subscription', label: 'Subscription', icon: <CreditCard size={20} /> },
     { href: '/dashboard/suspense-example', label: 'Suspense Demo', icon: <LayoutGrid size={20} /> },
+    { href: '/landing', label: 'Community Inbox', icon: <MessageSquare size={20} /> },
   ];
 
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, DocumentData } from 'firebase/firestore';
 import { Search, Users, Grid, List as ListIcon, Calendar, Crown } from 'lucide-react';
@@ -20,6 +20,7 @@ interface UserProfile extends DocumentData {
   };
   waNumber?: string;
   phone?: string;
+  communities?: string[]; // Direct array of community IDs
   communityMemberships?: {
     community: string;
     fullName?: string;
@@ -63,32 +64,82 @@ const MembersDisplayContent: React.FC<MembersDisplayProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const firestore = useFirestore();
   
-  // Query for users
-  const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'users');
-  }, [firestore]);
+  // Query for users with direct communities array
+  const usersDirectQuery = useMemoFirebase(() => {
+    if (!firestore || !communityId) return null;
+    return query(
+      collection(firestore, 'users'),
+      where('communities', 'array-contains', communityId)
+    );
+  }, [firestore, communityId]);
   
-  const { data: allUsers, isLoading, error } = useCollection<UserProfile>(usersQuery);
+  const { data: usersDirect, isLoading: loadingDirect, error: errorDirect } = useCollection<UserProfile>(usersDirectQuery);
+  
+  // Query for users with communityMemberships structure
+  const usersMembershipQuery = useMemoFirebase(() => {
+    if (!firestore || !communityId) return null;
+    return query(
+      collection(firestore, 'users'),
+      where('communityMemberships', 'array-contains', { community: communityId })
+    );
+  }, [firestore, communityId]);
+  
+  const { data: usersMembership, isLoading: loadingMembership, error: errorMembership } = useCollection<UserProfile>(usersMembershipQuery);
 
-  // Filter users who are members of the specified community
-  const members = allUsers?.filter(user => 
-    user.communityMemberships?.some((membership: any) => membership.community === communityId)
-  );
+  // Combine results from both queries
+  const members = useMemo(() => {
+    const membersMap = new Map<string, UserProfile>();
+    
+    // Add users from direct communities array
+    if (usersDirect) {
+      usersDirect.forEach(user => {
+        membersMap.set(user.id, user);
+      });
+    }
+    
+    // Add users from communityMemberships array
+    if (usersMembership) {
+      usersMembership.forEach(user => {
+        if (!membersMap.has(user.id)) {
+          membersMap.set(user.id, user);
+        }
+      });
+    }
+    
+    return Array.from(membersMap.values());
+  }, [usersDirect, usersMembership]);
 
   // Filter members based on search query
-  const filteredMembers = members?.filter(member => {
-    const fullName = member.fullName?.toLowerCase() || '';
-    const phoneNumber = member.phoneNumber || member.participation?.phoneNumber || member.waNumber || member.phone || '';
-    return fullName.includes(searchQuery.toLowerCase()) || phoneNumber.includes(searchQuery);
-  });
+  const filteredMembers = useMemo(() => {
+    if (!members) return [];
+    
+    return members.filter(member => {
+      const fullName = member.fullName?.toLowerCase() || '';
+      const phoneNumber = member.phoneNumber || member.participation?.phoneNumber || member.waNumber || member.phone || '';
+      return fullName.includes(searchQuery.toLowerCase()) || phoneNumber.includes(searchQuery);
+    });
+  }, [members, searchQuery]);
 
   // Get membership details for a specific community
   const getMembershipDetails = (user: UserProfile) => {
+    // Check if user has communityMemberships array
     const membership = user.communityMemberships?.find(
       (m: any) => m.community === communityId
     );
-    return membership || { role: '', joinedAt: null };
+    
+    if (membership) {
+      return membership;
+    }
+    
+    // If user has direct communities array but no specific membership details
+    if (user.communities?.includes(communityId)) {
+      return { 
+        role: user.role || '', 
+        joinedAt: user.createdAt || null 
+      };
+    }
+    
+    return { role: '', joinedAt: null };
   };
 
   // Check if user is an admin
@@ -100,6 +151,9 @@ const MembersDisplayContent: React.FC<MembersDisplayProps> = ({
            membershipRole.includes('admin') || 
            membershipRole === 'commu_leader';
   };
+
+  const isLoading = loadingDirect || loadingMembership;
+  const error = errorDirect || errorMembership;
 
   if (isLoading) {
     return <Loading message="Loading members..." />;

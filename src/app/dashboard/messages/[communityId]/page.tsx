@@ -1,261 +1,267 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import styles from '../../Dashboard.module.scss';
-import { MessageSquare, Search, Send } from 'lucide-react';
+import { MessageSquare, Search, Send, Loader2, ServerCrash } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit, DocumentData } from 'firebase/firestore';
+import Image from 'next/image';
+import { format } from 'date-fns';
 
-interface Member extends DocumentData {
+// --- TYPES ---
+interface Community extends DocumentData {
   id: string;
   name: string;
-  email?: string;
-  photoURL?: string;
-  lastActive?: any; // Using 'any' to handle Firestore Timestamp or mock data
-  role?: string;
+  communityProfileImage?: string;
+  logoURL?: string;
+  slug?: string;
 }
 
 interface Message extends DocumentData {
   id: string;
-  content: string;
-  senderId: string;
-  receiverId: string;
-  timestamp: any; // Using 'any' to handle Firestore Timestamp
-  read: boolean;
+  text: string;
+  createdAt: any;
+  community: string;
+  sender?: string;
+  messageType?: string;
+  image?: {
+    url: string;
+    caption?: string;
+  };
+  readBy?: { userId: string; text: string }[];
 }
 
-const MessagesPage: React.FC = () => {
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [messageText, setMessageText] = useState<string>('');
+interface UserProfile extends DocumentData {
+  id: string;
+  fullName?: string;
+  phoneNumber?: string;
+  role?: string;
+  profileImage?: string;
+  [key: string]: any;
+}
+
+interface UserWithMessages {
+  userId: string;
+  name: string;
+  phoneNumber: string;
+  role: string;
+  profileImage?: string;
+  messages: Message[];
+  _raw: UserProfile;
+}
+
+interface InboxData {
+  communityName: string;
+  users: UserWithMessages[];
+}
+
+// --- HELPER FUNCTIONS & COMPONENTS ---
+const formatDate = (date: any) => {
+  if (!date) return '';
+  if (date && (date.seconds || date._seconds)) {
+    const seconds = date.seconds || date._seconds;
+    return format(new Date(seconds * 1000), "HH:mm • dd/MMM/yyyy");
+  }
+  return format(new Date(date), "HH:mm • dd/MMM/yyyy");
+};
+
+function LoadingSpinner({ text }: { text: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4 text-text-secondary">
+      <Loader2 className="h-12 w-12 animate-spin" />
+      <p className="text-lg font-medium">{text}</p>
+    </div>
+  );
+}
+
+function ErrorDisplay({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4 text-destructive">
+      <ServerCrash className="h-12 w-12" />
+      <p className="text-lg font-medium">An Error Occurred</p>
+      <p className="text-sm font-mono bg-destructive/10 p-2 rounded-md">{message}</p>
+    </div>
+  );
+}
+
+function MessageContent({ message }: { message: Message }) {
+  return (
+    <div className="space-y-2">
+      {message.messageType === 'image' && message.image?.url ? (
+        <div className="space-y-2">
+          <Image 
+            src={message.image.url} 
+            alt={message.image.caption || 'Image message'} 
+            width={300} 
+            height={300} 
+            className="rounded-md object-cover border" 
+          />
+          {message.image.caption && <p className="text-sm italic">{message.image.caption}</p>}
+        </div>
+      ) : (
+        <p className="whitespace-pre-wrap">{message.text || <span className="italic">[Empty Message]</span>}</p>
+      )}
+    </div>
+  );
+}
+
+// --- MAIN MESSAGES PAGE ---
+export default function MessagesPage() {
+  const firestore = useFirestore();
   const params = useParams();
   const communityId = params?.communityId as string;
-  const firestore = useFirestore();
 
-  // Only try to fetch from the subcollection
-  const membersQuery = useMemoFirebase(() => {
+  const [selectedUser, setSelectedUser] = useState<UserWithMessages | null>(null);
+  const [inboxData, setInboxData] = useState<InboxData | null>(null);
+  const [fullConversation, setFullConversation] = useState<Message[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [messageText, setMessageText] = useState<string>('');
+
+  // Query for community data
+  const communityQuery = useMemoFirebase(() => {
     if (!firestore || !communityId) return null;
-    
-    console.log(`Messages page: Querying members for community ID: ${communityId}`);
+    return query(collection(firestore, 'communities'), where('id', '==', communityId));
+  }, [firestore, communityId]);
+  const { data: communityData, isLoading: loadingCommunity, error: communityError } = useCollection<Community>(communityQuery);
+
+  // Query for messages
+  const messagesQuery = useMemoFirebase(() => {
+    if (!firestore || !communityId) return null;
     return query(
-      collection(firestore, 'communities', communityId, 'members'),
-      limit(20)
+      collection(firestore, 'messages'),
+      where('community', '==', communityId)
     );
   }, [firestore, communityId]);
+  const { data: allMessages, isLoading: loadingMessages, error: messagesError } = useCollection<Message>(messagesQuery);
 
-  const { data: members, isLoading: membersLoading, error: membersError } = useCollection<Member>(membersQuery);
-  
-  // Use mock data if no members are found or there's an error
-  const [useMockData, setUseMockData] = useState(false);
-  const [mockMembers, setMockMembers] = useState<Member[]>([]);
-  
-  // Generate mock data if needed
-  useEffect(() => {
-    if (!membersLoading && (!members || members.length === 0 || membersError)) {
-      console.log('Messages page: No members found or error occurred, using mock data');
-      setUseMockData(true);
-      
-      // Generate mock members - adding more for a realistic experience
-      const mockData: Member[] = [
-        {
-          id: '1',
-          name: 'John Smith',
-          email: 'john.smith@example.com',
-          photoURL: 'https://randomuser.me/api/portraits/men/32.jpg',
-          lastActive: { toDate: () => new Date(2023, 9, 20) },
-          role: 'Admin'
-        },
-        {
-          id: '2',
-          name: 'Sarah Johnson',
-          email: 'sarah.j@example.com',
-          photoURL: 'https://randomuser.me/api/portraits/women/44.jpg',
-          lastActive: { toDate: () => new Date(2023, 9, 21) },
-          role: 'Member'
-        },
-        {
-          id: '3',
-          name: 'Michael Chen',
-          email: 'mchen@example.com',
-          photoURL: 'https://randomuser.me/api/portraits/men/22.jpg',
-          lastActive: { toDate: () => new Date(2023, 9, 15) },
-          role: 'Member'
-        },
-        {
-          id: '4',
-          name: 'Emily Rodriguez',
-          email: 'emily.r@example.com',
-          photoURL: 'https://randomuser.me/api/portraits/women/67.jpg',
-          lastActive: { toDate: () => new Date(2023, 9, 18) },
-          role: 'Member'
-        },
-        {
-          id: '5',
-          name: 'David Kim',
-          email: 'dkim@example.com',
-          photoURL: 'https://randomuser.me/api/portraits/men/45.jpg',
-          lastActive: { toDate: () => new Date(2023, 9, 19) },
-          role: 'Moderator'
-        },
-        {
-          id: '6',
-          name: 'Jessica Taylor',
-          email: 'jtaylor@example.com',
-          photoURL: 'https://randomuser.me/api/portraits/women/33.jpg',
-          lastActive: { toDate: () => new Date(2023, 9, 17) },
-          role: 'Member'
-        },
-        {
-          id: '7',
-          name: 'Robert Wilson',
-          email: 'rwilson@example.com',
-          photoURL: 'https://randomuser.me/api/portraits/men/52.jpg',
-          lastActive: { toDate: () => new Date(2023, 9, 16) },
-          role: 'Member'
-        },
-      ];
-      
-      setMockMembers(mockData);
-    }
-  }, [members, membersLoading, membersError]);
-
-  // Use either real members or mock data
-  const membersToUse = useMockData ? mockMembers : (members || []);
-  
-  // Select first member by default
-  useEffect(() => {
-    if (membersToUse.length && !selectedMemberId) {
-      setSelectedMemberId(membersToUse[0].id);
-    }
-  }, [membersToUse, selectedMemberId]);
-
-  // Filter members based on search
-  const filteredMembers = membersToUse.filter(member => 
-    member.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Messages component that only reloads when selectedMemberId changes
-  const Messages = React.memo(({ memberId }: { memberId: string }) => {
-    const firestore = useFirestore();
-    const [useMockMessages, setUseMockMessages] = useState(false);
-    const [mockMessages, setMockMessages] = useState<Message[]>([]);
-    
-    // Query for messages with selected member
-    const messagesQuery = useMemoFirebase(() => {
-      if (!firestore || !memberId) return null;
-      return query(
-        collection(firestore, 'messages'),
-        where('participants', 'array-contains', memberId),
-        orderBy('timestamp', 'desc'),
-        limit(50)
-      );
-    }, [firestore, memberId]);
-    
-    const { data: messages, isLoading: messagesLoading, error: messagesError } = useCollection<Message>(messagesQuery);
-    
-    // Generate mock messages if needed
-    useEffect(() => {
-      if (!messagesLoading && (!messages || messages.length === 0 || messagesError)) {
-        console.log('No messages found or error occurred, using mock data');
-        setUseMockMessages(true);
-        
-        // Generate mock messages
-        const mockData: Message[] = [
-          {
-            id: '1',
-            content: 'Hello! How are you doing today?',
-            senderId: 'currentUser',
-            receiverId: memberId,
-            timestamp: { toDate: () => new Date(2023, 9, 21, 10, 30) },
-            read: true
-          },
-          {
-            id: '2',
-            content: 'I\'m doing well, thanks for asking! How about you?',
-            senderId: memberId,
-            receiverId: 'currentUser',
-            timestamp: { toDate: () => new Date(2023, 9, 21, 10, 32) },
-            read: true
-          },
-          {
-            id: '3',
-            content: 'Great! I wanted to discuss the upcoming project deadline.',
-            senderId: 'currentUser',
-            receiverId: memberId,
-            timestamp: { toDate: () => new Date(2023, 9, 21, 10, 35) },
-            read: true
-          },
-        ];
-        
-        setMockMessages(mockData);
-      }
-    }, [messages, messagesLoading, messagesError, memberId]);
-    
-    // Use either real messages or mock data
-    const messagesToUse = useMockMessages ? mockMessages : (messages || []);
-    
-    if (messagesLoading && !useMockMessages) {
-      return (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-pulse flex space-x-4">
-            <div className="flex-1 space-y-4 py-1">
-              <div className="h-4 bg-gray-700 rounded w-3/4"></div>
-              <div className="space-y-2">
-                <div className="h-4 bg-gray-700 rounded"></div>
-                <div className="h-4 bg-gray-700 rounded w-5/6"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (!messagesToUse.length) {
-      return (
-        <div className="flex flex-col items-center justify-center h-64 text-text-secondary">
-          <MessageSquare size={48} className="opacity-20 mb-4" />
-          <p>No messages yet</p>
-          <p className="text-sm">Start a conversation!</p>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="space-y-4 p-4">
-        {messagesToUse.map(message => (
-          <div 
-            key={message.id} 
-            className={`p-3 rounded-lg max-w-[80%] ${
-              message.senderId === 'currentUser' 
-                ? 'bg-accent-blue/20 ml-auto' 
-                : 'bg-card-bg mr-auto'
-            }`}
-          >
-            <p>{message.content}</p>
-            <p className="text-xs text-text-secondary mt-1">
-              {message.timestamp?.toDate?.() ? 
-                message.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
-                'Unknown time'}
-            </p>
-          </div>
-        ))}
-      </div>
+  // Query for sent messages (if you have a separate collection)
+  const sentMessagesQuery = useMemoFirebase(() => {
+    if (!firestore || !communityId) return null;
+    return query(
+      collection(firestore, 'sendwamessagehistories'),
+      where('community', '==', communityId)
     );
-  });
+  }, [firestore, communityId]);
+  const { data: allSentMessages, isLoading: loadingSentMessages, error: sentMessagesError } = useCollection<Message>(sentMessagesQuery);
   
-  Messages.displayName = 'Messages';
+  // Query for users
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'users');
+  }, [firestore]);
+  const { data: allUsers, isLoading: loadingUsers, error: usersError } = useCollection<UserProfile>(usersQuery);
+
+  // Process data when dependencies change
+  useEffect(() => {
+    if (!communityId || !allMessages || !allUsers || !communityData || !allSentMessages) {
+      setInboxData(null);
+      setSelectedUser(null);
+      setFullConversation([]);
+      return;
+    }
+
+    const selectedCommunity = communityData[0];
+    if (!selectedCommunity) return;
+
+    // Combine received and sent messages for the community
+    const communityMessages = allMessages || [];
+    const communitySentMessages = allSentMessages || [];
+    const combinedCommunityMessages = [...communityMessages, ...communitySentMessages];
+    
+    // Create a set of user IDs who have sent or received a message in this community
+    const usersInvolved = new Set<string>();
+    combinedCommunityMessages.forEach(msg => {
+      if (msg.sender) usersInvolved.add(msg.sender);
+      msg.readBy?.forEach(r => usersInvolved.add(r.userId));
+    });
+    
+    const usersMap = new Map(allUsers.map(user => [user.id, user]));
+
+    const responseUsers: UserWithMessages[] = Array.from(usersInvolved)
+      .map(userId => {
+        const user = usersMap.get(userId);
+        if (!user) return null;
+
+        const userMessages = combinedCommunityMessages.filter(msg => 
+          msg.readBy?.some(r => r.userId === userId) || msg.sender === userId
+        );
+
+        if (userMessages.length === 0) return null;
+
+        userMessages.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+        return {
+          userId: userId,
+          name: user.fullName || 'Unknown User',
+          phoneNumber: user.phoneNumber || user.participation?.phoneNumber || user.waNumber || user.phone || 'Unknown Phone',
+          role: user.role || 'user',
+          profileImage: user.profileImage,
+          messages: userMessages,
+          _raw: user,
+        };
+      })
+      .filter((u): u is UserWithMessages => !!u);
+
+    // Sort users by most recent message
+    responseUsers.sort((a, b) => {
+      const lastMsgTimeA = a.messages[0]?.createdAt?.seconds || 0;
+      const lastMsgTimeB = b.messages[0]?.createdAt?.seconds || 0;
+      return lastMsgTimeB - lastMsgTimeA;
+    });
+    
+    setInboxData({
+      communityName: selectedCommunity.name,
+      users: responseUsers,
+    });
+    
+    // Check if currently selected user still exists in the filtered list
+    let currentUserStillExists = selectedUser ? responseUsers.find(u => u.userId === selectedUser.userId) : null;
+    
+    // If not, select the first user in the list
+    if (!currentUserStillExists && responseUsers.length > 0) {
+      currentUserStillExists = responseUsers[0];
+    }
+    
+    if (currentUserStillExists) {
+      setSelectedUser(currentUserStillExists);
+      
+      // Load the full conversation for the selected user
+      const conversationMessages = combinedCommunityMessages.filter(msg => 
+        (msg.readBy?.some(r => r.userId === currentUserStillExists!.userId)) || (msg.sender === currentUserStillExists!.userId)
+      );
+      
+      // Sort messages by creation time (oldest first)
+      conversationMessages.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+      setFullConversation(conversationMessages);
+    } else {
+      setSelectedUser(null);
+      setFullConversation([]);
+    }
+  }, [communityId, allMessages, allSentMessages, allUsers, communityData, selectedUser]);
+
+  // Filter users based on search query
+  const filteredUsers = useMemo(() => {
+    if (!inboxData?.users) return [];
+    return inboxData.users.filter(user => 
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.phoneNumber.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [inboxData, searchQuery]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageText.trim() || !selectedMemberId) return;
+    if (!messageText.trim() || !selectedUser) return;
     
     // Here you would add the message to Firestore
-    console.log(`Sending message to ${selectedMemberId}: ${messageText}`);
+    console.log(`Sending message to ${selectedUser.name}: ${messageText}`);
     
     // Clear input
     setMessageText('');
   };
+
+  const isLoading = loadingCommunity || loadingMessages || loadingUsers || loadingSentMessages;
+  const error = communityError || messagesError || usersError || sentMessagesError;
 
   return (
     <div className={styles.dashboardContent}>
@@ -263,20 +269,20 @@ const MessagesPage: React.FC = () => {
         <div>
           <h1 className={styles.title}>Messages</h1>
           <p className={styles.subtitle}>
-            Chat with community members
+            {inboxData ? `Community: ${inboxData.communityName}` : 'Loading community...'}
           </p>
         </div>
       </div>
 
       <div className="bg-card-bg rounded-lg overflow-hidden flex h-[calc(100vh-12rem)]">
-        {/* Members sidebar */}
+        {/* Users sidebar */}
         <div className="w-1/3 border-r border-border flex flex-col">
           <div className="p-3 border-b border-border">
             <div className="relative">
               <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary" />
               <input
                 type="text"
-                placeholder="Search members..."
+                placeholder="Search users..."
                 className="w-full bg-background rounded-md py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-accent-pink"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -285,37 +291,38 @@ const MessagesPage: React.FC = () => {
           </div>
           
           <div className="overflow-y-auto flex-1">
-            {membersLoading ? (
-              <div className="p-4 space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-3 animate-pulse">
-                    <div className="w-10 h-10 rounded-full bg-gray-700"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
-                      <div className="h-3 bg-gray-700 rounded w-1/2"></div>
-                    </div>
-                  </div>
-                ))}
+            {isLoading && !inboxData ? (
+              <LoadingSpinner text="Loading users..." />
+            ) : error ? (
+              <ErrorDisplay message={error.message} />
+            ) : !inboxData || inboxData.users.length === 0 ? (
+              <div className="p-4 text-center text-text-secondary mt-8">
+                {isLoading ? 'Loading...' : 'No conversations in this community.'}
               </div>
             ) : (
-              filteredMembers.map(member => (
+              filteredUsers.map(user => (
                 <div
-                  key={member.id}
+                  key={user.userId}
                   className={`flex items-center p-3 cursor-pointer hover:bg-background transition-colors ${
-                    selectedMemberId === member.id ? 'bg-background border-l-2 border-accent-pink' : ''
+                    selectedUser?.userId === user.userId ? 'bg-background border-l-2 border-accent-pink' : ''
                   }`}
-                  onClick={() => setSelectedMemberId(member.id)}
+                  onClick={() => setSelectedUser(user)}
                 >
                   <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
-                    {member.photoURL ? (
-                      <img src={member.photoURL} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                    {user.profileImage ? (
+                      <img src={user.profileImage} alt={user.name} className="w-full h-full rounded-full object-cover" />
                     ) : (
-                      <span>{member.name.charAt(0).toUpperCase()}</span>
+                      <span>{user.name.charAt(0).toUpperCase()}</span>
                     )}
                   </div>
-                  <div>
-                    <p className="font-medium">{member.name}</p>
-                    <p className="text-xs text-text-secondary">{member.role || 'Member'}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{user.name}</p>
+                    <p className="text-xs text-text-secondary truncate">{user.phoneNumber}</p>
+                    {user.messages.length > 0 && (
+                      <p className="text-xs text-text-secondary truncate mt-1">
+                        {user.messages[0].text || '[Media Message]'}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))
@@ -325,16 +332,64 @@ const MessagesPage: React.FC = () => {
         
         {/* Messages area */}
         <div className="flex-1 flex flex-col">
-          {selectedMemberId ? (
+          {selectedUser ? (
             <>
               {/* Chat header */}
               <div className="p-4 border-b border-border flex items-center">
-                {members?.find(m => m.id === selectedMemberId)?.name || 'Loading...'}
+                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
+                  {selectedUser.profileImage ? (
+                    <img src={selectedUser.profileImage} alt={selectedUser.name} className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <span>{selectedUser.name.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium">{selectedUser.name}</p>
+                  <p className="text-xs text-text-secondary">{selectedUser.phoneNumber}</p>
+                </div>
               </div>
               
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto flex flex-col-reverse">
-                <Messages memberId={selectedMemberId} />
+              <div className="flex-1 overflow-y-auto">
+                <div className="space-y-4 p-4">
+                  {fullConversation.map(message => {
+                    const isSentByUser = message.sender === selectedUser.userId;
+                    
+                    return (
+                      <div 
+                        key={message.id} 
+                        className={`flex items-end gap-2 ${isSentByUser ? 'justify-start' : 'justify-end'}`}
+                      >
+                        {isSentByUser && (
+                          <div className="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0">
+                            {selectedUser.profileImage ? (
+                              <img src={selectedUser.profileImage} alt={selectedUser.name} className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full rounded-full flex items-center justify-center text-white text-xs">
+                                {selectedUser.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="max-w-[70%]">
+                          <div className={`p-3 rounded-lg ${
+                            isSentByUser ? 'bg-background' : 'bg-accent-blue/20'
+                          }`}>
+                            <MessageContent message={message} />
+                          </div>
+                          <p className={`text-xs text-text-secondary mt-1 ${isSentByUser ? 'text-left' : 'text-right'}`}>
+                            {formatDate(message.createdAt)}
+                          </p>
+                        </div>
+                        {!isSentByUser && (
+                          <div className="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0 flex items-center justify-center text-white text-xs">
+                            A
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
               
               {/* Message input */}
@@ -358,13 +413,11 @@ const MessagesPage: React.FC = () => {
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-text-secondary">
               <MessageSquare size={48} className="opacity-20 mb-4" />
-              <p>Select a member to start chatting</p>
+              <p>Select a user to view their conversation</p>
             </div>
           )}
         </div>
       </div>
     </div>
   );
-};
-
-export default MessagesPage;
+}
