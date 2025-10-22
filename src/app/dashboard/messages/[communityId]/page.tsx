@@ -7,6 +7,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, DocumentData, doc, getDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import SimpleMembersList, { Member } from '@/components/dashboard/SimpleMembersList';
 import styles from './MessagesPage.module.scss';
 
 // --- TYPES ---
@@ -128,9 +129,9 @@ export default function MessagesPage() {
   const [selectedUser, setSelectedUser] = useState<UserWithMessages | null>(null);
   const [inboxData, setInboxData] = useState<InboxData | null>(null);
   const [fullConversation, setFullConversation] = useState<Message[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [messageText, setMessageText] = useState<string>('');
   const [community, setCommunity] = useState<Community | null>(null);
+  const [communityMembers, setCommunityMembers] = useState<Member[]>([]);
 
   // Fetch community data directly
   useEffect(() => {
@@ -179,6 +180,98 @@ export default function MessagesPage() {
     return collection(firestore, 'users');
   }, [firestore]);
   const { data: allUsers, isLoading: loadingUsers, error: usersError } = useCollection<UserProfile>(usersQuery);
+  
+  // Extract community members for the members list with last message timestamp
+  useEffect(() => {
+    if (!allUsers || !allMessages || !allSentMessages) return;
+    
+    // Use a more efficient approach to process messages
+    const processMembers = () => {
+      console.time('process-members');
+      
+      // Get all messages for this community
+      const communityMessages = allMessages.filter(msg => msg.community === communityId);
+      const communitySentMessages = allSentMessages.filter(msg => msg.community === communityId);
+      
+      // Create a map of user IDs to their last message timestamp
+      const userLastMessageMap = new Map<string, number>();
+      
+      // Process received messages
+      for (const msg of communityMessages) {
+        const timestamp = msg.createdAt?.seconds || 0;
+        
+        // Check sender
+        if (msg.sender) {
+          const currentTimestamp = userLastMessageMap.get(msg.sender) || 0;
+          if (timestamp > currentTimestamp) {
+            userLastMessageMap.set(msg.sender, timestamp);
+          }
+        }
+        
+        // Check readBy
+        if (msg.readBy) {
+          for (const r of msg.readBy) {
+            const currentTimestamp = userLastMessageMap.get(r.userId) || 0;
+            if (timestamp > currentTimestamp) {
+              userLastMessageMap.set(r.userId, timestamp);
+            }
+          }
+        }
+      }
+      
+      // Process sent messages
+      for (const msg of communitySentMessages) {
+        const timestamp = msg.createdAt?.seconds || 0;
+        
+        // Check sender
+        if (msg.sender) {
+          const currentTimestamp = userLastMessageMap.get(msg.sender) || 0;
+          if (timestamp > currentTimestamp) {
+            userLastMessageMap.set(msg.sender, timestamp);
+          }
+        }
+        
+        // Check readBy
+        if (msg.readBy) {
+          for (const r of msg.readBy) {
+            const currentTimestamp = userLastMessageMap.get(r.userId) || 0;
+            if (timestamp > currentTimestamp) {
+              userLastMessageMap.set(r.userId, timestamp);
+            }
+          }
+        }
+      }
+      
+      // Create member objects with last message timestamp
+      const members = allUsers.map(user => ({
+        id: user.id,
+        fullName: user.fullName || user.name || user.displayName || 'Unknown User',
+        email: user.email,
+        phoneNumber: user.phoneNumber || user.phone || user.waNumber || '',
+        profileImage: user.profileImage,
+        role: user.role || 'user',
+        status: 'active' as const,
+        lastMessageTimestamp: userLastMessageMap.get(user.id)
+      }));
+      
+      console.timeEnd('process-members');
+      return members;
+    };
+    
+    // Use requestIdleCallback if available, otherwise use setTimeout
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      // @ts-ignore
+      window.requestIdleCallback(() => {
+        const members = processMembers();
+        setCommunityMembers(members);
+      });
+    } else {
+      setTimeout(() => {
+        const members = processMembers();
+        setCommunityMembers(members);
+      }, 0);
+    }
+  }, [allUsers, allMessages, allSentMessages, communityId]);
 
   // Process data when dependencies change
   useEffect(() => {
@@ -284,14 +377,6 @@ export default function MessagesPage() {
     }
   }, [communityId, allMessages, allSentMessages, allUsers, community, selectedUser]);
 
-  // Filter users based on search query
-  const filteredUsers = useMemo(() => {
-    if (!inboxData?.users) return [];
-    return inboxData.users.filter(user => 
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.phoneNumber.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [inboxData, searchQuery]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,25 +389,67 @@ export default function MessagesPage() {
     setMessageText('');
   };
 
-  const handleSelectUser = (user: UserWithMessages) => {
-    setSelectedUser(user);
-    
-    // Load the full conversation for the selected user
-    if (allMessages && allSentMessages) {
-      const communityMessages = allMessages.filter(msg => msg.community === communityId);
-      const communitySentMessages = allSentMessages.filter(msg => msg.community === communityId);
-      const combinedCommunityMessages = [...communityMessages, ...communitySentMessages];
-      
-      const conversationMessages = combinedCommunityMessages.filter(msg => 
-        (msg.readBy?.some(r => r.userId === user.userId)) || (msg.sender === user.userId)
-      );
-      
-      // Sort messages by creation time (oldest first)
-      conversationMessages.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
-      console.log(`Loaded ${conversationMessages.length} messages for conversation with ${user.name}`);
-      setFullConversation(conversationMessages);
+  const handleSelectUser = (user: UserWithMessages | Member) => {
+    // If the user is from the members list, we need to find their corresponding UserWithMessages
+    if (!('messages' in user)) {
+      const userWithMessages = inboxData?.users.find(u => u.userId === user.id);
+      if (userWithMessages) {
+        setSelectedUser(userWithMessages);
+        
+        // Load the full conversation for the selected user
+        if (allMessages && allSentMessages) {
+          const communityMessages = allMessages.filter(msg => msg.community === communityId);
+          const communitySentMessages = allSentMessages.filter(msg => msg.community === communityId);
+          const combinedCommunityMessages = [...communityMessages, ...communitySentMessages];
+          
+          const conversationMessages = combinedCommunityMessages.filter(msg => 
+            (msg.readBy?.some(r => r.userId === userWithMessages.userId)) || (msg.sender === userWithMessages.userId)
+          );
+          
+          // Sort messages by creation time (oldest first)
+          conversationMessages.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+          console.log(`Loaded ${conversationMessages.length} messages for conversation with ${userWithMessages.name}`);
+          setFullConversation(conversationMessages);
+        }
+      } else {
+        // This member doesn't have any messages yet
+        setSelectedUser({
+          userId: user.id,
+          name: user.fullName || '',
+          phoneNumber: user.phoneNumber || '',
+          role: user.role || 'user',
+          profileImage: user.profileImage,
+          messages: [],
+          _raw: {
+            id: user.id,
+            fullName: user.fullName,
+            phoneNumber: user.phoneNumber,
+            role: user.role,
+            profileImage: user.profileImage
+          } as UserProfile
+        });
+        setFullConversation([]);
+      }
     } else {
-      setFullConversation([]);
+      setSelectedUser(user);
+      
+      // Load the full conversation for the selected user
+      if (allMessages && allSentMessages) {
+        const communityMessages = allMessages.filter(msg => msg.community === communityId);
+        const communitySentMessages = allSentMessages.filter(msg => msg.community === communityId);
+        const combinedCommunityMessages = [...communityMessages, ...communitySentMessages];
+        
+        const conversationMessages = combinedCommunityMessages.filter(msg => 
+          (msg.readBy?.some(r => r.userId === user.userId)) || (msg.sender === user.userId)
+        );
+        
+        // Sort messages by creation time (oldest first)
+        conversationMessages.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+        console.log(`Loaded ${conversationMessages.length} messages for conversation with ${user.name}`);
+        setFullConversation(conversationMessages);
+      } else {
+        setFullConversation([]);
+      }
     }
   };
 
@@ -331,77 +458,14 @@ export default function MessagesPage() {
 
   return (
     <div className={styles.messagesContainer}>
-      <div className={styles.usersList}>
-        <div className={styles.usersHeader}>
-          <h2 className={styles.usersTitle}>Messages</h2>
-          <p className={styles.usersSubtitle}>
-            {community ? community.name : 'Loading community...'}
-          </p>
-        </div>
-        
-        <div className="p-3 border-b border-border">
-          <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary" />
-            <input
-              type="text"
-              placeholder="Search users..."
-              className={styles.searchInput}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-        
-        <div className={styles.userList}>
-          {isLoading ? (
-            <LoadingSpinner text="Loading users..." />
-          ) : error ? (
-            <ErrorDisplay message={error.message} />
-          ) : !inboxData || inboxData.users.length === 0 ? (
-            <div className={styles.emptyState}>
-              <MessageSquare className={styles.emptyStateIcon} />
-              <p>No conversations in this community.</p>
-            </div>
-          ) : (
-            <ul>
-              {filteredUsers.map(user => (
-                <li key={user.userId} className={styles.userItem}>
-                  <button
-                    onClick={() => handleSelectUser(user)}
-                    className={`${styles.userButton} ${selectedUser?.userId === user.userId ? styles.active : ''}`}
-                  >
-                    <div className={styles.userInfo}>
-                      <Avatar className={styles.userAvatar}>
-                        {user.profileImage ? (
-                          <AvatarImage src={user.profileImage} alt={user.name} />
-                        ) : (
-                          <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className={styles.userDetails}>
-                        <div className={styles.userName}>
-                          <span>{user.name}</span>
-                          <RoleIcon role={user.role} />
-                        </div>
-                        <p className={styles.userPhone}>{user.phoneNumber}</p>
-                        {user.messages.length > 0 && (
-                          <p className={styles.messagePreview}>
-                            {user.messages[0].text || '[Media Message]'}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {user.messages.length > 0 && (
-                      <span className={styles.messageTime}>
-                        {formatDate(user.messages[0].createdAt)}
-                      </span>
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      <div className={styles.membersList}>
+        <SimpleMembersList 
+          members={communityMembers}
+          onSelectMember={handleSelectUser}
+          selectedMemberId={selectedUser?.userId}
+          className={styles.simpleMembersList}
+          isLoading={isLoading}
+        />
       </div>
       
       <div className={styles.conversation}>

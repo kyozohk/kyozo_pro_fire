@@ -7,6 +7,22 @@
   margin-top: 1rem;
 }
 
+.membersList {
+  width: 380px;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--card-bg);
+  overflow: hidden;
+}
+
+// Header styles removed
+
+.simpleMembersList {
+  height: 100%;
+  overflow-y: auto;
+}
+
 .usersList {
   width: 320px;
   border-right: 1px solid var(--border-color);
@@ -394,7 +410,7 @@
     height: auto;
   }
   
-  .usersList {
+  .membersList {
     width: 100%;
     height: 300px;
     border-right: none;
