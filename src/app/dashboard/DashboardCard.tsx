@@ -10,6 +10,7 @@ interface DashboardCardProps {
   icon: React.ReactNode;
   trend?: number;
   trendLabel?: string;
+  trendIsPercentage?: boolean;
 }
 
 const DashboardCard: React.FC<DashboardCardProps> = ({
@@ -18,6 +19,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   icon,
   trend,
   trendLabel = 'vs last period',
+  trendIsPercentage = false,
 }) => {
   const isTrendPositive = trend && trend > 0;
   const isTrendNegative = trend && trend < 0;
@@ -36,15 +38,15 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             {isTrendPositive ? (
               <>
                 <ArrowUp size={16} />
-                {trendValue}%
+                {trendValue}{trendIsPercentage ? '%' : ''}
               </>
             ) : isTrendNegative ? (
               <>
                 <ArrowDown size={16} />
-                {trendValue}%
+                {trendValue}{trendIsPercentage ? '%' : ''}
               </>
             ) : (
-              '0%'
+              `0${trendIsPercentage ? '%' : ''}`
             )}
           </div>
           <span className={styles.trendLabel}>{trendLabel}</span>
