@@ -6,7 +6,7 @@ import styles from '../../Dashboard.module.scss';
 import { UserPlus, Loader2, ServerCrash } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit, DocumentData } from 'firebase/firestore';
-import { CommunityMembersList } from '@/components/dashboard';
+import { EnhancedMembersList } from '@/components/dashboard';
 
 interface Member extends DocumentData {
   id: string;
@@ -210,20 +210,7 @@ const MembersPage: React.FC = () => {
 
   return (
     <div className={styles.dashboardContent}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Members</h1>
-          <p className={styles.subtitle}>
-            {communityData && communityData.length > 0 ? `Community: ${communityData[0].name}` : 'Manage community members'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="px-4 py-2 bg-accent-pink text-white rounded-md flex items-center gap-2">
-            <UserPlus size={16} />
-            Invite Member
-          </button>
-        </div>
-      </div>
+      {/* Header is now included in the EnhancedMembersList component */}
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center p-8 bg-card-bg rounded-lg">
@@ -237,15 +224,16 @@ const MembersPage: React.FC = () => {
           <p className="text-sm font-mono bg-destructive/10 p-2 rounded-md mt-2">{error.message}</p>
         </div>
       ) : (
-        <CommunityMembersList
+        <EnhancedMembersList
           members={filteredMembers}
           defaultSortField="name"
           defaultViewMode="list"
-          onEdit={(member) => console.log('Edit member:', member)}
-          onMessage={(member) => console.log('Message member:', member)}
-          onCall={(member) => console.log('Call member:', member)}
-          onEmail={(member) => console.log('Email member:', member)}
-          onDelete={(member) => console.log('Delete member:', member)}
+          onEdit={(member: Member) => console.log('Edit member:', member)}
+          onMessage={(member: Member) => console.log('Message member:', member)}
+          onCall={(member: Member) => console.log('Call member:', member)}
+          onEmail={(member: Member) => console.log('Email member:', member)}
+          onDelete={(member: Member) => console.log('Delete member:', member)}
+          onInvite={() => console.log('Invite member clicked')}
         />
       )}
     </div>

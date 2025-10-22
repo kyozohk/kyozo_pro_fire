@@ -11,6 +11,7 @@ export { default as CommunityHeader } from './CommunityHeader';
 export { default as CommunityMembersList } from './CommunityMembersList';
 export { default as CommunityMembersListDemo } from './CommunityMembersListDemo';
 export { default as CommunityBanner } from './CommunityBanner';
+export { default as EnhancedMembersList } from './EnhancedMembersList';
 
 // Suspense-enabled components
 export { default as SuspenseCommunityList } from './SuspenseCommunityList';
