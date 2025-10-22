@@ -10,6 +10,7 @@ export { default as MembersDisplay } from './MembersDisplay';
 export { default as CommunityHeader } from './CommunityHeader';
 export { default as CommunityMembersList } from './CommunityMembersList';
 export { default as CommunityMembersListDemo } from './CommunityMembersListDemo';
+export { default as CommunityBanner } from './CommunityBanner';
 
 // Suspense-enabled components
 export { default as SuspenseCommunityList } from './SuspenseCommunityList';

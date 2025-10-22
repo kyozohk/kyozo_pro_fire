@@ -240,6 +240,7 @@ const MembersPage: React.FC = () => {
         <CommunityMembersList
           members={filteredMembers}
           defaultSortField="name"
+          defaultViewMode="list"
           onEdit={(member) => console.log('Edit member:', member)}
           onMessage={(member) => console.log('Message member:', member)}
           onCall={(member) => console.log('Call member:', member)}

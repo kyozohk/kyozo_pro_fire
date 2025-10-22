@@ -152,6 +152,15 @@ export default function DashboardLayout({
 
   return (
     <div className={styles.dashboardLayout}>
+      {/* SVG gradient definition for sidebar icons */}
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <linearGradient id="sidebar-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="var(--accent-pink)" />
+            <stop offset="100%" stopColor="var(--accent-purple)" />
+          </linearGradient>
+        </defs>
+      </svg>
       <aside className={`${styles.sidebar} ${isMobileMenuOpen ? styles.open : ''}`}>
         <div className={styles.logoContainer}>          
           <div className={styles.communitySelector}>
@@ -170,10 +179,25 @@ export default function DashboardLayout({
               ? `${item.href}/${selectedCommunityId}` 
               : item.href;
               
-            // Check if this route is active - either exact match or includes both the route and community ID
-            const isActive = pathname === item.href || 
-              (pathname.includes(item.href) && 
-               (selectedCommunityId ? pathname.includes(selectedCommunityId) : true));
+            // Check if this route is active - more precise matching to ensure only one item is active
+            const isActive = (() => {
+              // Exact match for dashboard root
+              if (item.href === '/dashboard' && pathname === '/dashboard') {
+                return true;
+              }
+              
+              // For specific sections, check if the pathname starts with the route path
+              // but not if it's just a substring of another route
+              if (item.href !== '/dashboard') {
+                const routePath = item.href.endsWith('/') ? item.href : `${item.href}/`;
+                const pathnameToCheck = pathname.endsWith('/') ? pathname : `${pathname}/`;
+                
+                // Check if pathname starts with the route path (e.g., /dashboard/messages/)
+                return pathnameToCheck.startsWith(routePath);
+              }
+              
+              return false;
+            })();
             
             return (
               <Link

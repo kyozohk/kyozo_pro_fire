@@ -151,15 +151,28 @@ const EnhancedSelect: React.FC<EnhancedSelectProps> = ({
             <span className={styles.placeholder}>{placeholder}</span>
           )}
           <div className={styles.arrow}>
-            <ChevronDown size={16} />
+            <ChevronDown size={20} />
           </div>
         </div>
       ) : (
         // Open state - show three-part dropdown
         <div className={styles.dropdownContainer}>
+          {/* Add overlay for backdrop */}
+          <div 
+            className={styles.dropdownOverlay} 
+            onClick={() => setIsOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: -1
+            }}
+          />
           {/* Part 1: Search component with rounded top */}
           <div className={styles.searchComponent}>
-            <Search size={16} className={styles.searchIcon} />
+            <Search size={20} className={styles.searchIcon} />
             <input
               ref={searchInputRef}
               type="text"
