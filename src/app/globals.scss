@@ -69,12 +69,24 @@ a:hover {
   color: var(--text-secondary);
 }
 
+.text-accent-pink {
+  color: var(--accent-pink);
+}
+
 .mb-4 {
   margin-bottom: 1rem;
 }
 
 .mb-8 {
   margin-bottom: 2rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.p-4 {
+  padding: 1rem;
 }
 
 .p-6 {

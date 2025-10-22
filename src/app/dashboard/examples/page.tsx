@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
-import { CommunityList, CommunitySelect, MembersList, Loading, CommunityHeader } from '@/components/dashboard';
+import { CommunityList, CommunitySelect, MembersList, Loading, CommunityHeader, EnhancedSelectWithCommunities } from '@/components/dashboard';
+import { EnhancedSelect } from '@/components/ui';
 import styles from '../Dashboard.module.scss';
 
 const ExamplesPage: React.FC = () => {
@@ -94,6 +95,27 @@ const ExamplesPage: React.FC = () => {
             <p>Please select a community above to view its members</p>
           </div>
         )}
+      </div>
+      
+      <div className="mb-8">
+        <h2 className={styles.sectionTitle}>EnhancedSelect Component</h2>
+        <p className="mb-4 text-text-secondary">
+          A custom select component with search functionality and gradient styling
+        </p>
+        
+        <div className="max-w-md">
+          <Suspense fallback={<Loading message="Loading enhanced select..." size="small" />}>
+            <EnhancedSelectWithCommunities
+              value={selectedCommunityId}
+              onChange={setSelectedCommunityId}
+              placeholder="Select a community"
+            />
+          </Suspense>
+          
+          <div className="mt-4 p-4 bg-card-bg rounded-lg">
+            <p>For more examples, visit the <a href="/dashboard/enhanced-select-example" className="text-accent-pink">Enhanced Select</a> page</p>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,298 @@
+@import '../../styles/variables';
+
+.selectContainer {
+  position: relative;
+  width: 100%;
+}
+
+// Trigger (closed state)
+.selectTrigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background-color: var(--input-background, rgba(255, 255, 255, 0.05));
+  border: 0.5px solid var(--text-secondary, rgba(255, 255, 255, 0.3));
+  border-radius: 9999px; /* Fully rounded */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 3rem;
+  font-size: 0.875rem;
+  z-index: 1;
+  
+  &:hover {
+    border-color: var(--accent-pink);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: transparent;
+  }
+  
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  // Gradient border effect
+  &::before {
+    content: '';
+    position: absolute;
+    top: -0.5px;
+    left: -0.5px;
+    right: -0.5px;
+    bottom: -0.5px;
+    border-radius: 9999px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: -1;
+    border: 0.5px solid transparent;
+    background-image: linear-gradient(var(--card-bg), var(--card-bg)), linear-gradient(90deg, var(--accent-pink), var(--accent-blue));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+  
+  &:hover::before {
+    opacity: 1;
+  }
+}
+
+.selectedOption {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// Dropdown container (open state)
+.dropdownContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  // Add a gradient border to the entire container
+  background-clip: padding-box;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--accent-pink), var(--accent-blue));
+    z-index: -2;
+  }
+}
+
+// Part 1: Search component with rounded top
+.searchComponent {
+  position: relative;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  background-color: var(--card-bg);
+  border-top-left-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding: 0.75rem 1rem;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-top-left-radius: 9999px;
+    border-top-right-radius: 9999px;
+    background-color: var(--card-bg);
+    z-index: -1;
+    margin: 1px;
+    margin-bottom: 0;
+  }
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.5rem 0.5rem 0.5rem 2.5rem;
+  background-color: transparent;
+  border: none;
+  color: var(--text-color);
+  font-size: 0.875rem;
+  height: 100%;
+  
+  &:focus {
+    outline: none;
+  }
+  
+  &::placeholder {
+    color: var(--text-secondary);
+  }
+}
+
+// Part 2: Options list with straight edges
+.optionsList {
+  max-height: 18rem;
+  overflow-y: auto;
+  background-color: var(--card-bg);
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1px;
+    right: 1px;
+    bottom: 0;
+    background-color: var(--card-bg);
+    z-index: -1;
+  }
+  
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 3px;
+    
+    &:hover {
+      background: var(--text-color);
+    }
+  }
+}
+
+// Part 3: Bottom component with rounded bottom
+.bottomComponent {
+  height: 3rem;
+  background-color: var(--card-bg);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    border-bottom-left-radius: 0.75rem;
+    border-bottom-right-radius: 0.75rem;
+    background-color: var(--card-bg);
+    z-index: -1;
+  }
+}
+
+// Option styling
+.option {
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 3rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-weight: 300;
+  font-size: 0.875rem;
+  background-color: var(--card-bg);
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:hover {
+    background-color: rgba(236, 72, 153, 0.1);
+    color: var(--accent-pink);
+  }
+  
+  &.selected {
+    background-color: rgba(236, 72, 153, 0.15);
+    color: var(--accent-pink);
+    font-weight: 500;
+  }
+}
+
+// Option icon and image styling
+.optionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.75rem;
+  color: white;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-blue));
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.optionImage {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.optionLabel {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.placeholder {
+  color: var(--text-secondary);
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.noResults {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  background-color: var(--card-bg);
+}

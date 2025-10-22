@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Avatar, AvatarFallback, AvatarImage, Button } from '@/components/ui';
 import { format } from 'date-fns';
 import { Loader2, Inbox, ServerCrash, ArrowLeft, Link as LinkIcon, FileText, User, Crown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, DocumentData } from 'firebase/firestore';
@@ -18,14 +16,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Badge } from '@/components/ui/badge';
-import {
+  Badge,
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+  AccordionTrigger
+} from '@/components/ui'
 
 
 // --- TYPES ---

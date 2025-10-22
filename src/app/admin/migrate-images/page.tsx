@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 

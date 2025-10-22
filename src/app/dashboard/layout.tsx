@@ -56,6 +56,7 @@ export default function DashboardLayout({
     { href: '/dashboard/settings', label: 'Settings', icon: <Settings size={20} /> },
     { href: '/dashboard/examples', label: 'Examples', icon: <LayoutGrid size={20} /> },
     { href: '/dashboard/suspense-example', label: 'Suspense Demo', icon: <LayoutGrid size={20} /> },
+    { href: '/dashboard/enhanced-select-example', label: 'Enhanced Select', icon: <LayoutGrid size={20} /> },
   ];
 
   return (
