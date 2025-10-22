@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
-import { CommunityList, CommunitySelect, MembersList, Loading, CommunityHeader, EnhancedSelectWithCommunities } from '@/components/dashboard';
+import { CommunityList, CommunitySelect, MembersList, Loading, CommunityHeader, CommunitySelectEx } from '@/components/dashboard';
 import { EnhancedSelect } from '@/components/ui';
 import styles from '../Dashboard.module.scss';
 
@@ -104,13 +104,11 @@ const ExamplesPage: React.FC = () => {
         </p>
         
         <div className="max-w-md">
-          <Suspense fallback={<Loading message="Loading enhanced select..." size="small" />}>
-            <EnhancedSelectWithCommunities
-              value={selectedCommunityId}
-              onChange={setSelectedCommunityId}
-              placeholder="Select a community"
-            />
-          </Suspense>
+          <CommunitySelectEx
+            value={selectedCommunityId}
+            onChange={setSelectedCommunityId}
+            placeholder="Select a community"
+          />
           
           <div className="mt-4 p-4 bg-card-bg rounded-lg">
             <p>For more examples, visit the <a href="/dashboard/enhanced-select-example" className="text-accent-pink">Enhanced Select</a> page</p>

@@ -4,6 +4,7 @@ import React from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, DocumentData } from 'firebase/firestore';
 import { EnhancedSelect } from '@/components/ui';
+import styles from '@/components/ui/EnhancedSelect.module.scss';
 import Loading from './Loading';
 
 // Types
@@ -15,14 +16,14 @@ interface Community extends DocumentData {
   slug?: string;
 }
 
-interface EnhancedSelectWithCommunitiesProps {
+interface CommunitySelectExProps {
   value: string;
   onChange: (communityId: string) => void;
   placeholder?: string;
   className?: string;
 }
 
-const EnhancedSelectWithCommunities: React.FC<EnhancedSelectWithCommunitiesProps> = ({
+const CommunitySelectEx: React.FC<CommunitySelectExProps> = ({
   value,
   onChange,
   placeholder = 'Select a community',
@@ -39,7 +40,11 @@ const EnhancedSelectWithCommunities: React.FC<EnhancedSelectWithCommunitiesProps
   const { data: communities, isLoading, error } = useCollection<Community>(communitiesQuery);
 
   if (isLoading) {
-    return <Loading message="Loading communities..." size="small" />;
+    return (
+      <div className={`${className} ${styles.loading}`} style={{ height: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 1rem', borderRadius: '0', backgroundColor: 'var(--input-background, rgba(255, 255, 255, 0.05))' }}>
+        <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Loading communities...</span>
+      </div>
+    );
   }
 
   if (error) {
@@ -69,4 +74,4 @@ const EnhancedSelectWithCommunities: React.FC<EnhancedSelectWithCommunitiesProps
   );
 };
 
-export default EnhancedSelectWithCommunities;
+export default CommunitySelectEx;

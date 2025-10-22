@@ -14,7 +14,7 @@ import {
   LayoutGrid,
   ChevronDown
 } from 'lucide-react';
-import { SuspenseCommunitySelect, Loading } from '@/components/dashboard';
+import { CommunitySelectEx, Loading } from '@/components/dashboard';
 import styles from './layout.module.scss';
 
 export default function DashboardLayout({
@@ -64,19 +64,12 @@ export default function DashboardLayout({
       <aside className={`${styles.sidebar} ${isMobileMenuOpen ? styles.open : ''}`}>
         <div className={styles.logoContainer}>          
           <div className={styles.communitySelector}>
-            <Suspense fallback={
-              <div className={styles.dropdownSkeleton}>
-                <span className="sr-only">Loading communities...</span>
-              </div>
-            }>
-              <SuspenseCommunitySelect
-                value={selectedCommunityId}
-                onChange={setSelectedCommunityId}
-                placeholder="Select a community"
-                className={styles.communityDropdown}
-                showSearch={true}
-              />
-            </Suspense>
+            <CommunitySelectEx
+              value={selectedCommunityId}
+              onChange={setSelectedCommunityId}
+              placeholder="Select a community"
+              className={styles.communityDropdown}
+            />
           </div>
         </div>
         <nav className={styles.nav}>
