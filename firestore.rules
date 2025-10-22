@@ -1,0 +1,62 @@
+/**
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for managing database export requests.
+ *
+ * Data Structure:
+ * All database export requests are nested under /users/{userId}/database_exports/{exportId}.
+ *
+ * Key Security Decisions:
+ * - Users can only access their own database export requests.
+ * - Listing database exports is restricted to the owning user.
+ * - Data shape is not strictly validated to allow for rapid prototyping, but ownership is strictly enforced.
+ *
+ * Denormalization for Authorization:
+ * The userId is extracted from the path and compared against request.auth.uid, avoiding the need for document reads.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Manages database export requests for each user. Only the authenticated user can access their own exports.
+     * @path /users/{userId}/database_exports/{exportId}
+     * @allow (create) - User 'user123' creates a new export request with ID 'export456'.
+     *   - request.auth.uid: 'user123'
+     *   - request.resource.data: { id: 'user123' }
+     * @allow (get) - User 'user123' retrieves export request 'export456'.
+     *   - request.auth.uid: 'user123'
+     * @allow (list) - User 'user123' lists all their export requests.
+     *   - request.auth.uid: 'user123'
+     * @allow (update) - User 'user123' updates export request 'export456'.
+     *   - request.auth.uid: 'user123'
+     * @allow (delete) - User 'user123' deletes export request 'export456'.
+     *   - request.auth.uid: 'user123'
+     * @deny (create) - User 'user456' attempts to create an export request under user 'user123'.
+     *   - request.auth.uid: 'user456'
+     *   - request.resource.data: { id: 'user123' }
+     * @deny (get) - User 'user456' attempts to retrieve export request 'export456' belonging to user 'user123'.
+     *   - request.auth.uid: 'user456'
+     * @principle Enforces document ownership and prevents unauthorized data access.
+     */
+    match /users/{userId}/database_exports/{exportId} {
+      // Helper function to check if the current user is the owner of the document.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Helper function to check if the current user is the owner of the existing document.
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      // Read rules
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      // Write rules
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

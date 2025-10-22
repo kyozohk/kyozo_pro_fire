@@ -1,0 +1,142 @@
+@import '../../styles/variables';
+
+.inputWrapper {
+  margin-left: 1px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.required {
+  color: var(--accent-pink);
+  margin-left: 0.25rem;
+}
+
+.inputContainer {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+  box-sizing: border-box;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -0.5px;
+    left: -0.5px;
+    right: -0.5px;
+    bottom: -0.5px;
+    border-radius: 9999px; /* Fully rounded */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 0;
+    border: 0.5px solid transparent;
+    background-image: linear-gradient(var(--card-bg), var(--card-bg)), linear-gradient(90deg, var(--accent-pink), var(--accent-blue));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+  
+  &.hasError::before {
+    opacity: 1;
+    background-image: linear-gradient(var(--card-bg), var(--card-bg)), linear-gradient(90deg, var(--accent-pink), var(--accent-pink));
+  }
+}
+
+.input {
+  position: relative;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  box-sizing: border-box;
+  max-width: 450px; /* Standardize max-width at input level */
+  border: 0.5px solid var(--text-secondary); /* Theme-aware border */
+  border-radius: 9999px; /* Fully rounded */
+  transition: all 0.2s ease;
+  z-index: 1;
+  
+  &:focus {
+    outline: none;
+    border-color: transparent; /* Hide the input border on focus */
+    color: var(--text-color); /* Ensure text color is visible on focus */
+  }
+  
+  &:focus-visible {
+    outline: none;
+  }
+  
+  &::placeholder {
+    color: var(--text-secondary); /* Theme-aware placeholder color */
+    font-weight: 100; /* Thinner font weight for placeholder text */
+    font-size: 0.75rem;
+    font-family: var(--font-family-thin, var(--font-family)); /* Use light font family if available */
+    letter-spacing: 0.03em; /* Slightly increase letter spacing */
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Focus state with gradient border
+.inputContainer:focus-within::before {
+  opacity: 1;
+}
+
+// Error state
+.hasError {
+  border-color: var(--accent-pink) !important;
+  
+  &:focus {
+    border-color: var(--accent-pink) !important;
+  }
+  
+  &::placeholder {
+    color: var(--accent-pink);
+    opacity: 0.8;
+    font-style: italic;
+  }
+}
+
+.floatingLabel {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: all 0.2s ease;
+  font-weight: 300;
+  z-index: 2;
+  
+  &.active {
+    top: -0.175rem;
+    left: 0.75rem;
+    font-size: 0.75rem;
+    background-color: var(--card-bg);
+    padding: 0 0.5rem;
+    color: var(--text-color);
+    z-index: 2;
+  }
+  
+  &.hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.errorMessage {
+  color: var(--accent-pink);
+  font-size: 0.5rem;
+  margin-top: 0.25rem;
+  margin-left: 0.5rem;
+}

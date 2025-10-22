@@ -1,0 +1,194 @@
+@import '../../styles/variables';
+
+.inputWrapper {
+  margin-left: 1px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.inputContainer {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -0.5px;
+    left: -0.5px;
+    right: -0.5px;
+    bottom: -0.5px;
+    border-radius: 9999px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 0;
+    border: 0.5px solid transparent;
+    background-image: linear-gradient(var(--card-bg), var(--card-bg)), linear-gradient(90deg, var(--accent-pink), var(--accent-blue));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+  
+  &.hasError::before {
+    opacity: 1;
+    background-image: linear-gradient(var(--card-bg), var(--card-bg)), linear-gradient(90deg, var(--accent-pink), var(--accent-pink));
+  }
+}
+
+.select {
+  position: relative;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  box-sizing: border-box;
+  border: 0.5px solid var(--text-secondary);
+  border-radius: 9999px; /* Fully rounded */
+  transition: all 0.2s ease;
+  z-index: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  &:hover {
+    border-color: var(--accent-pink);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: transparent;
+  }
+  
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.selectedValue {
+  flex: 1;
+  text-align: left;
+  color: var(--text-color);
+  padding-right: 1rem;
+  font-weight: 300;
+  
+  .select:not(:focus) &:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-secondary);
+    font-weight: 100;
+    font-size: 0.75rem;
+    font-family: var(--font-family-thin, var(--font-family));
+    letter-spacing: 0.03em;
+  }
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+  
+  &.open {
+    transform: rotate(180deg);
+  }
+  
+  svg {
+    width: 12px;
+    height: 8px;
+  }
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 250px;
+  overflow-y: auto;
+  margin-top: 4px;
+  
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 3px;
+    
+    &:hover {
+      background: var(--text-color);
+    }
+  }
+}
+
+.option {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--border-color);
+  min-height: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: var(--card-bg);
+  font-weight: 300;
+  
+  &:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+  
+  &:hover {
+    background-color: rgba(236, 72, 153, 0.1);
+    color: var(--accent-pink);
+  }
+  
+  &.selected {
+    background-color: rgba(236, 72, 153, 0.15);
+    color: var(--accent-pink);
+    font-weight: 600;
+  }
+}
+
+// Focus state with gradient border
+.inputContainer:focus-within::before {
+  opacity: 1;
+}
+
+// Error state
+.hasError {
+  border-color: var(--accent-pink) !important;
+  
+  .selectedValue {
+    color: var(--accent-pink);
+  }
+}
+
+.errorMessage {
+  color: var(--accent-pink);
+  font-size: 0.5rem;
+  margin-top: 0.25rem;
+  margin-left: 0.5rem;
+}

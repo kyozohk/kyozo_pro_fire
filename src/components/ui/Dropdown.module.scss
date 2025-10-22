@@ -1,0 +1,100 @@
+@import '../../styles/variables';
+
+.dropdownContainer {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+}
+
+.dropdownTrigger {
+  position: relative;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border: 0.5px solid var(--text-secondary);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: var(--accent-blue);
+  }
+  
+  &.open {
+    border-color: var(--accent-blue);
+  }
+}
+
+.dropdownIcon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+  
+  .open & {
+    transform: rotate(180deg);
+  }
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: 100%;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+  z-index: 10;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: all 0.2s ease;
+  
+  &.open {
+    max-height: 300px;
+    opacity: 1;
+    overflow-y: auto;
+  }
+}
+
+.dropdownItem {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  &.selected {
+    background-color: rgba(var(--accent-blue-rgb), 0.1);
+    color: var(--accent-blue);
+  }
+}
+
+.floatingLabel {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: all 0.2s ease;
+  font-weight: 300;
+  z-index: 2;
+  
+  &.active {
+    top: -0.175rem;
+    left: 0.75rem;
+    font-size: 0.75rem;
+    background-color: var(--card-bg);
+    padding: 0 0.5rem;
+    color: var(--text-color);
+    z-index: 2;
+  }
+}

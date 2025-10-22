@@ -1,0 +1,63 @@
+@import '../../styles/variables';
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkboxWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkboxInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--card-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  
+  &.checked {
+    background-color: var(--accent-blue);
+    border-color: var(--accent-blue);
+  }
+}
+
+.checkIcon {
+  width: 14px;
+  height: 14px;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  
+  .checked & {
+    opacity: 1;
+  }
+}
+
+.checkboxText {
+  margin-left: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-color);
+}
