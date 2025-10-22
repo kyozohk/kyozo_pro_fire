@@ -1,0 +1,125 @@
+// Color variables
+$color-background: hsl(255, 27%, 95%);
+$color-foreground: hsl(240, 10%, 3.9%);
+$color-card: hsl(0, 0%, 100%);
+$color-card-foreground: hsl(240, 10%, 3.9%);
+$color-popover: hsl(0, 0%, 100%);
+$color-popover-foreground: hsl(240, 10%, 3.9%);
+$color-primary: hsl(255, 35%, 51%);
+$color-primary-foreground: hsl(0, 0%, 98%);
+$color-secondary: hsl(240, 4.8%, 95.9%);
+$color-secondary-foreground: hsl(240, 5.9%, 10%);
+$color-muted: hsl(240, 4.8%, 95.9%);
+$color-muted-foreground: hsl(240, 3.8%, 46.1%);
+$color-accent: hsl(255, 100%, 87%);
+$color-accent-foreground: hsl(255, 35%, 51%);
+$color-destructive: hsl(0, 84.2%, 60.2%);
+$color-destructive-foreground: hsl(0, 0%, 98%);
+$color-border: hsl(240, 5.9%, 90%);
+$color-input: hsl(240, 5.9%, 90%);
+$color-ring: hsl(255, 35%, 51%);
+$color-chart-1: hsl(12, 76%, 61%);
+$color-chart-2: hsl(173, 58%, 39%);
+$color-chart-3: hsl(197, 37%, 24%);
+$color-chart-4: hsl(43, 74%, 66%);
+$color-chart-5: hsl(27, 87%, 67%);
+
+// Sidebar colors
+$color-sidebar-background: hsl(0, 0%, 98%);
+$color-sidebar-foreground: hsl(240, 5.3%, 26.1%);
+$color-sidebar-primary: hsl(240, 5.9%, 10%);
+$color-sidebar-primary-foreground: hsl(0, 0%, 98%);
+$color-sidebar-accent: hsl(240, 4.8%, 95.9%);
+$color-sidebar-accent-foreground: hsl(240, 5.9%, 10%);
+$color-sidebar-border: hsl(220, 13%, 91%);
+$color-sidebar-ring: hsl(217.2, 91.2%, 59.8%);
+
+// Dark mode colors
+$dark-color-background: hsl(255, 10%, 10%);
+$dark-color-foreground: hsl(0, 0%, 98%);
+$dark-color-card: hsl(255, 10%, 15%);
+$dark-color-card-foreground: hsl(0, 0%, 98%);
+$dark-color-popover: hsl(255, 10%, 10%);
+$dark-color-popover-foreground: hsl(0, 0%, 98%);
+$dark-color-primary: hsl(255, 100%, 87%);
+$dark-color-primary-foreground: hsl(255, 35%, 41%);
+$dark-color-secondary: hsl(240, 3.7%, 15.9%);
+$dark-color-secondary-foreground: hsl(0, 0%, 98%);
+$dark-color-muted: hsl(240, 3.7%, 15.9%);
+$dark-color-muted-foreground: hsl(240, 5%, 64.9%);
+$dark-color-accent: hsl(255, 35%, 51%);
+$dark-color-accent-foreground: hsl(0, 0%, 98%);
+$dark-color-destructive: hsl(0, 62.8%, 30.6%);
+$dark-color-destructive-foreground: hsl(0, 0%, 98%);
+$dark-color-border: hsl(240, 3.7%, 15.9%);
+$dark-color-input: hsl(240, 3.7%, 15.9%);
+$dark-color-ring: hsl(255, 100%, 87%);
+$dark-color-chart-1: hsl(220, 70%, 50%);
+$dark-color-chart-2: hsl(160, 60%, 45%);
+$dark-color-chart-3: hsl(30, 80%, 55%);
+$dark-color-chart-4: hsl(280, 65%, 60%);
+$dark-color-chart-5: hsl(340, 75%, 55%);
+
+// Sidebar dark mode colors
+$dark-color-sidebar-background: hsl(240, 5.9%, 10%);
+$dark-color-sidebar-foreground: hsl(240, 4.8%, 95.9%);
+$dark-color-sidebar-primary: hsl(224.3, 76.3%, 48%);
+$dark-color-sidebar-primary-foreground: hsl(0, 0%, 100%);
+$dark-color-sidebar-accent: hsl(240, 3.7%, 15.9%);
+$dark-color-sidebar-accent-foreground: hsl(240, 4.8%, 95.9%);
+$dark-color-sidebar-border: hsl(240, 3.7%, 15.9%);
+$dark-color-sidebar-ring: hsl(217.2, 91.2%, 59.8%);
+
+// Spacing
+$spacing-1: 0.25rem;
+$spacing-2: 0.5rem;
+$spacing-3: 0.75rem;
+$spacing-4: 1rem;
+$spacing-5: 1.25rem;
+$spacing-6: 1.5rem;
+$spacing-8: 2rem;
+$spacing-10: 2.5rem;
+$spacing-12: 3rem;
+$spacing-14: 3.5rem;
+$spacing-16: 4rem;
+
+// Font families
+$font-body: 'Inter', sans-serif;
+$font-headline: 'Inter', sans-serif;
+$font-code: 'Source Code Pro', monospace;
+
+// Border radius
+$radius: 0.5rem;
+$radius-lg: $radius;
+$radius-md: calc($radius - 2px);
+$radius-sm: calc($radius - 4px);
+
+// Animations
+@keyframes fade-in-up {
+  0% { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}

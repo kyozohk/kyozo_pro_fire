@@ -1,0 +1,145 @@
+// Flexbox mixins
+@mixin flex($direction: row, $justify: flex-start, $align: stretch, $wrap: nowrap) {
+  display: flex;
+  flex-direction: $direction;
+  justify-content: $justify;
+  align-items: $align;
+  flex-wrap: $wrap;
+}
+
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+// Responsive mixins
+@mixin mobile {
+  @media (max-width: 639px) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: 640px) and (max-width: 1023px) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: 1024px) {
+    @content;
+  }
+}
+
+// Animation mixins
+@mixin animate($animation, $duration, $timing-function, $fill-mode) {
+  animation: $animation $duration $timing-function $fill-mode;
+}
+
+@mixin fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+@mixin accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+@mixin accordion-up {
+  animation: accordion-up 0.2s ease-out;
+}
+
+// Border and shadow mixins
+@mixin border($color: $color-border, $width: 1px, $style: solid) {
+  border: $width $style $color;
+}
+
+@mixin border-bottom($color: $color-border, $width: 1px, $style: solid) {
+  border-bottom: $width $style $color;
+}
+
+@mixin border-top($color: $color-border, $width: 1px, $style: solid) {
+  border-top: $width $style $color;
+}
+
+@mixin border-right($color: $color-border, $width: 1px, $style: solid) {
+  border-right: $width $style $color;
+}
+
+@mixin border-left($color: $color-border, $width: 1px, $style: solid) {
+  border-left: $width $style $color;
+}
+
+// Utility mixins
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin transition($property: all, $duration: 0.3s, $timing-function: ease) {
+  transition: $property $duration $timing-function;
+}
+
+@mixin hover {
+  &:hover {
+    @content;
+  }
+}
+
+// Positioning mixins
+@mixin absolute-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@mixin fixed-center {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+// Typography mixins
+@mixin font-size($size, $line-height: 1.5) {
+  font-size: $size;
+  line-height: $line-height;
+}
+
+@mixin font-body {
+  font-family: $font-body;
+}
+
+@mixin font-headline {
+  font-family: $font-headline;
+}
+
+@mixin font-code {
+  font-family: $font-code;
+}
+
+// Utility classes for common patterns
+@mixin sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

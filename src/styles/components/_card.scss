@@ -1,0 +1,61 @@
+@import '../variables';
+@import '../mixins';
+
+.card {
+  @include border($color-border);
+  background-color: $color-card;
+  color: $color-card-foreground;
+  border-radius: $radius-lg;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    padding: $spacing-6;
+    gap: $spacing-1;
+    border-bottom: 1px solid $color-border;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  &__description {
+    font-size: 0.875rem;
+    color: $color-muted-foreground;
+  }
+
+  &__content {
+    padding: $spacing-6;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    padding: $spacing-6;
+    border-top: 1px solid $color-border;
+  }
+}
+
+.dark {
+  .card {
+    @include border($dark-color-border);
+    background-color: $dark-color-card;
+    color: $dark-color-card-foreground;
+    
+    &__header {
+      border-bottom: 1px solid $dark-color-border;
+    }
+    
+    &__description {
+      color: $dark-color-muted-foreground;
+    }
+    
+    &__footer {
+      border-top: 1px solid $dark-color-border;
+    }
+  }
+}

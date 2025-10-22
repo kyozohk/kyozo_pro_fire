@@ -108,11 +108,11 @@ const RoleIcon = ({ role }: { role?: string }) => {
   switch (role?.toLowerCase()) {
     case 'admin':
     case 'commu_leader':
-      return <Crown className="w-5 h-5 text-yellow-500" />;
+      return <Crown className="w-5 h-5" style={{ color: '#f59e0b' }} />;
     case 'user':
-      return <User className="w-5 h-5 text-blue-500" />;
+      return <User className="w-5 h-5" style={{ color: '#3b82f6' }} />;
     default:
-      return <User className="w-5 h-5 text-gray-500" />;
+      return <User className="w-5 h-5" style={{ color: '#6b7280' }} />;
   }
 };
 
@@ -131,7 +131,7 @@ function ErrorDisplay({ message }: { message: string }) {
     <div className="flex flex-col items-center justify-center h-full gap-4 text-destructive">
       <ServerCrash className="h-12 w-12" />
       <p className="text-lg font-medium">An Error Occurred</p>
-      <p className="text-sm font-mono bg-destructive/10 p-2 rounded-md">{message}</p>
+      <p className="text-sm font-mono p-2 rounded-md" style={{ backgroundColor: 'rgba(var(--destructive), 0.1)' }}>{message}</p>
     </div>
   );
 }
@@ -162,7 +162,7 @@ function MessageContent({ message }: { message: Message }) {
         <div className="space-y-2">
             {headerComponent?.format === 'document' && headerComponent.documentUrl && (
                 <a href={headerComponent.documentUrl} target="_blank" rel="noopener noreferrer" className="block">
-                    <Button variant="outline" className="w-full">
+                    <Button variant="outline" className="button button--outline w-full">
                         <FileText className="mr-2 h-4 w-4" />
                         View Document
                     </Button>
@@ -185,7 +185,7 @@ function MessageContent({ message }: { message: Message }) {
                 <div className="flex flex-col gap-2 pt-2 border-t border-white/20">
                     {buttonComponents.buttons.map((button, index) => (
                         <a key={index} href={button.url} target="_blank" rel="noopener noreferrer">
-                             <Button variant="secondary" className="w-full justify-start">
+                             <Button variant="secondary" className="button button--secondary w-full justify-start">
                                  <LinkIcon className="mr-2 h-4 w-4" />
                                 {button.text}
                              </Button>
@@ -328,16 +328,16 @@ export default function InboxPage() {
   const error = communitiesError || messagesError || usersError || sentMessagesError;
   
   return (
-    <div className="flex h-screen bg-background text-foreground font-body">
-      <div className="w-full md:w-[380px] border-r h-full flex flex-col">
-        <header className="p-4 border-b flex-shrink-0 flex items-center gap-2">
+    <div className="inbox">
+      <div className="inbox__sidebar">
+        <header className="inbox__header">
             <Link href="/">
                 <Button variant="ghost" size="icon">
                     <ArrowLeft />
                 </Button>
             </Link>
             <Select value={selectedCommunityId || ''} onValueChange={setSelectedCommunityId}>
-              <SelectTrigger className="w-full h-14 text-base">
+              <SelectTrigger className="select__trigger select__trigger--h14">
                 <SelectValue placeholder="Select a community..." />
               </SelectTrigger>
               <SelectContent>
@@ -345,7 +345,7 @@ export default function InboxPage() {
                   sortedCommunities.map(community => (
                     <SelectItem key={community.id} value={community.id}>
                        <div className="flex items-center gap-3">
-                         <Avatar className="h-10 w-10">
+                         <Avatar className="avatar avatar--md">
                            {community.communityProfileImage ? (
                              <Image src={community.communityProfileImage} alt={community.name} width={40} height={40} className="object-cover" />
                            ) : (
@@ -360,42 +360,42 @@ export default function InboxPage() {
               </SelectContent>
             </Select>
         </header>
-        <div className="flex-1 overflow-y-auto">
+        <div className="inbox__content">
           {isLoading && !inboxData ? (
             <LoadingSpinner text="Fetching conversations..." />
           ) : error ? (
             <ErrorDisplay message={error.message} />
           ) : !inboxData || inboxData.users.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground mt-8">
+            <div className="inbox__empty">
                 {isLoading || !selectedCommunityId ? 'Loading...' : 'No conversations in this community.'}
             </div>
           ) : (
-            <ul>
+            <ul className="inbox__user-list">
               {inboxData.users.map(user => (
                 <li key={user.userId}>
                   <button
                     onClick={() => setSelectedUser(user)}
-                    className={cn('w-full text-left p-4 border-b hover:bg-muted/50 transition-colors', selectedUser?.userId === user.userId ? 'bg-muted' : '')}
+                    className={cn('inbox__user-item', selectedUser?.userId === user.userId ? 'inbox__user-item--selected' : '')}
                   >
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                            <Avatar>
+                    <div className="inbox__user-header">
+                        <div className="inbox__user-info">
+                            <Avatar className="avatar">
                                 {user.profileImage ? (
-                                    <AvatarImage src={user.profileImage} alt={user.name} />
+                                    <AvatarImage src={user.profileImage} alt={user.name} className="avatar__image" />
                                 ) : (
-                                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                    <AvatarFallback className="avatar__fallback">{user.name.charAt(0).toUpperCase()}</AvatarFallback>
                                 )}
                             </Avatar>
-                            <div>
-                                <p className="font-semibold">{user.name}</p>
-                                <p className="text-sm text-muted-foreground">{user.phoneNumber}</p>
+                            <div className="inbox__user-details">
+                                <p className="inbox__user-details__name">{user.name}</p>
+                                <p className="inbox__user-details__phone">{user.phoneNumber}</p>
                             </div>
                         </div>
                         <RoleIcon role={user.role} />
                     </div>
 
                     {user.messages.length > 0 && (
-                        <p className="text-xs text-muted-foreground truncate mt-2 pl-12">{user.messages[0].text || '[Media/Template Message]'}</p>
+                        <p className="inbox__message-preview">{user.messages[0].text || '[Media/Template Message]'}</p>
                     )}
                   </button>
                 </li>
@@ -405,27 +405,27 @@ export default function InboxPage() {
         </div>
       </div>
 
-      <main className="flex-1 h-full flex flex-col bg-muted/30">
+      <main className="inbox__main">
         {selectedUser ? (
           <>
-            <header className="p-4 border-b bg-background flex-shrink-0">
-                <div className="flex items-start gap-3">
-                    <Avatar className="h-14 w-14">
+            <header className="inbox__conversation-header">
+                <div className="inbox__conversation-header__user">
+                    <Avatar className="avatar avatar--lg">
                         {selectedUser.profileImage ? (
-                            <AvatarImage src={selectedUser.profileImage} alt={selectedUser.name} />
+                            <AvatarImage src={selectedUser.profileImage} alt={selectedUser.name} className="avatar__image" />
                         ) : (
-                            <AvatarFallback className="text-xl">{selectedUser.name?.charAt(0) || 'U'}</AvatarFallback>
+                            <AvatarFallback className="avatar__fallback avatar__fallback--xl">{selectedUser.name?.charAt(0) || 'U'}</AvatarFallback>
                         )}
                     </Avatar>
-                    <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{selectedUser.name}</h3>
-                        <p className="text-sm text-muted-foreground">{selectedUser.phoneNumber}</p>
+                    <div className="inbox__conversation-header__details">
+                        <h3 className="inbox__conversation-header__details__name">{selectedUser.name}</h3>
+                        <p className="inbox__conversation-header__details__phone">{selectedUser.phoneNumber}</p>
                     </div>
                 </div>
-                 <Accordion type="single" collapsible className="w-full mt-2">
-                    <AccordionItem value="item-1">
-                        <AccordionTrigger className="text-xs">View Full Conversation JSON</AccordionTrigger>
-                        <AccordionContent>
+                 <Accordion type="single" collapsible className="accordion w-full mt-2">
+                    <AccordionItem value="item-1" className="accordion__item">
+                        <AccordionTrigger className="accordion__trigger accordion__trigger--xs">View Full Conversation JSON</AccordionTrigger>
+                        <AccordionContent className="accordion__content">
                             <pre className="p-2 bg-muted text-xs rounded-md overflow-auto max-h-40">
                                 {JSON.stringify(fullConversation, null, 2)}
                             </pre>
@@ -433,35 +433,36 @@ export default function InboxPage() {
                     </AccordionItem>
                 </Accordion>
             </header>
-            <div className="flex-1 p-4 overflow-y-auto">
-              <div className="space-y-4 max-w-3xl mx-auto">
+            <div className="inbox__messages">
+              <div className="inbox__messages__container">
                 {fullConversation.map(message => {
                   const isSentByUser = message.sender === selectedUser.userId;
                   
                   return (
-                    <div key={message.id} className={cn("flex items-end gap-2 w-full", isSentByUser ? "justify-end" : "justify-start")}>
+                    <div key={message.id} className={cn("inbox__message", isSentByUser ? "inbox__message--sent" : "")}>
                         {!isSentByUser && (
-                             <Avatar className="h-8 w-8">
-                                <AvatarFallback>A</AvatarFallback>
+                             <Avatar className="avatar avatar--sm">
+                                <AvatarFallback className="avatar__fallback">A</AvatarFallback>
                            </Avatar>
                         )}
-                        <div className="flex-grow-0">
+                        <div className="inbox__message__content">
                              <div className={cn(
-                                "p-3 rounded-lg w-full max-w-md text-left",
-                                isSentByUser ? "bg-primary text-primary-foreground" : "bg-background"
+                                "inbox__message__content__bubble",
+                                isSentByUser ? "inbox__message__content__bubble--sent" : ""
                             )}>
                                 <MessageContent message={message}/>
                             </div>
-                            <p className={cn("text-xs text-muted-foreground mt-1", isSentByUser ? "text-right" : "text-left")}>
+                            <p className={cn("inbox__message__content__timestamp", 
+                              isSentByUser ? "inbox__message__content__timestamp--sent" : "inbox__message__content__timestamp--received")}>
                                 {formatDate(message.createdAt)}
                             </p>
                         </div>
                         {isSentByUser && (
-                            <Avatar className="h-8 w-8">
+                            <Avatar className="avatar avatar--sm">
                                 {selectedUser.profileImage ? (
-                                    <AvatarImage src={selectedUser.profileImage} alt={selectedUser.name} />
+                                    <AvatarImage src={selectedUser.profileImage} alt={selectedUser.name} className="avatar__image" />
                                 ) : (
-                                    <AvatarFallback>{selectedUser.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                    <AvatarFallback className="avatar__fallback">{selectedUser.name.charAt(0).toUpperCase()}</AvatarFallback>
                                 )}
                             </Avatar>
                         )}
@@ -472,12 +473,12 @@ export default function InboxPage() {
             </div>
           </>
         ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground text-center p-8">
+            <div className="inbox__empty-state">
                 <Inbox className="h-16 w-16" />
-                <p className="mt-4 text-lg font-semibold">
+                <p className="inbox__empty-state__title">
                     {isLoading ? "Loading..." : selectedCommunityId ? 'Select a user to view their conversation' : 'Select a Community'}
                 </p>
-                <p className="text-sm">
+                <p className="inbox__empty-state__subtitle">
                     {isLoading || !selectedCommunityId ? 'Choose from the dropdown to view conversations.' : 'There are no messages for this community, or no user is selected.'}
                 </p>
             </div>

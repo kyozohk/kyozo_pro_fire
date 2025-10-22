@@ -1,0 +1,120 @@
+@import '../variables';
+@import '../mixins';
+
+.select {
+  position: relative;
+  width: 100%;
+
+  &__trigger {
+    @include flex(row, space-between, center);
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 $spacing-3;
+    background-color: transparent;
+    border: 1px solid $color-input;
+    border-radius: $radius-md;
+    font-size: 0.875rem;
+    line-height: 1;
+    color: $color-foreground;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus, &:hover {
+      border-color: $color-ring;
+      box-shadow: 0 0 0 1px $color-ring;
+    }
+
+    &--placeholder {
+      color: $color-muted-foreground;
+    }
+
+    &--h14 {
+      height: 3.5rem;
+      font-size: 1rem;
+    }
+  }
+
+  &__content {
+    position: absolute;
+    width: var(--radix-select-trigger-width);
+    max-height: var(--radix-select-content-available-height);
+    overflow: hidden;
+    background-color: $color-popover;
+    border-radius: $radius-md;
+    border: 1px solid $color-border;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    animation: fade-in-up 0.2s ease-out;
+  }
+
+  &__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: $spacing-2 $spacing-3;
+    font-size: 0.875rem;
+    color: $color-foreground;
+    user-select: none;
+    cursor: pointer;
+    outline: none;
+
+    &:hover {
+      background-color: $color-muted;
+    }
+
+    &--selected {
+      background-color: $color-accent;
+      color: $color-accent-foreground;
+      font-weight: 500;
+    }
+
+    &--disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &__value {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    height: 100%;
+  }
+}
+
+.dark {
+  .select {
+    &__trigger {
+      border-color: $dark-color-input;
+      color: $dark-color-foreground;
+
+      &:focus, &:hover {
+        border-color: $dark-color-ring;
+        box-shadow: 0 0 0 1px $dark-color-ring;
+      }
+
+      &--placeholder {
+        color: $dark-color-muted-foreground;
+      }
+    }
+
+    &__content {
+      background-color: $dark-color-popover;
+      border-color: $dark-color-border;
+    }
+
+    &__item {
+      color: $dark-color-foreground;
+
+      &:hover {
+        background-color: $dark-color-muted;
+      }
+
+      &--selected {
+        background-color: $dark-color-accent;
+        color: $dark-color-accent-foreground;
+      }
+    }
+  }
+}

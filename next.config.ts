@@ -2,6 +2,12 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  sassOptions: {
+    includePaths: ['./src/styles'],
+    prependData: `@import "variables";
+                  @import "mixins";
+                 `
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

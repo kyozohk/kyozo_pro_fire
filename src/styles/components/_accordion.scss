@@ -1,0 +1,62 @@
+@import '../variables';
+@import '../mixins';
+
+.accordion {
+  width: 100%;
+
+  &__item {
+    border-bottom: 1px solid $color-border;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__trigger {
+    @include flex(row, space-between, center);
+    width: 100%;
+    padding: $spacing-4 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+
+    &--xs {
+      font-size: 0.75rem;
+    }
+
+    &[data-state="open"] > .accordion__chevron {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__chevron {
+    transition: transform 0.2s;
+  }
+
+  &__content {
+    overflow: hidden;
+
+    &[data-state="open"] {
+      animation: accordion-down 0.2s ease-out;
+    }
+
+    &[data-state="closed"] {
+      animation: accordion-up 0.2s ease-out;
+    }
+  }
+
+  &__content-inner {
+    padding-bottom: $spacing-4;
+  }
+}
+
+.dark {
+  .accordion {
+    &__item {
+      border-color: $dark-color-border;
+    }
+  }
+}

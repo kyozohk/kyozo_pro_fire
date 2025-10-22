@@ -1,0 +1,61 @@
+@import '../variables';
+@import '../mixins';
+
+.avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: $color-muted;
+
+  &--sm {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  &--md {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  &--lg {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  &__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-weight: 500;
+    color: $color-foreground;
+    background-color: $color-muted;
+    
+    &--xl {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+.dark {
+  .avatar {
+    background-color: $dark-color-muted;
+    
+    &__fallback {
+      color: $dark-color-foreground;
+      background-color: $dark-color-muted;
+    }
+  }
+}
